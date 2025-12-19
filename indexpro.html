@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Spelling RPG - 聖言傳教士傳說</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/framer-motion@10.16.16/dist/framer-motion.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+TC:wght@700;900&display=swap');
+        
+        * { scrollbar-width: none; -ms-overflow-style: none; touch-action: manipulation; }
+        *::-webkit-scrollbar { display: none; }
+
+        body { 
+            user-select: none; -webkit-user-select: none; background-color: #000; 
+            margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+            font-family: 'Noto Serif TC', serif;
+        }
+
+        .game-container {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            display: flex; justify-content: center; align-items: center;
+        }
+
+        .game-frame {
+            width: 100%; height: 100%; max-width: 480px;
+            background: #020617; position: relative;
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+
+        .font-rpg { font-family: 'Cinzel', 'Noto Serif TC', serif; }
+        .rpg-panel { background: rgba(15, 23, 42, 0.95); border: 2px solid #475569; }
+        .rpg-button { background: linear-gradient(to bottom, #78350f, #451a03); border: 2px solid #fbbf24; color: white; }
+        
+        .tactic-btn {
+            position: relative; width: 70px; height: 70px;
+            border-radius: 50%; border: 3px solid #475569;
+            background: #0f172a; overflow: hidden;
+            transition: all 0.2s; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .tactic-btn.active { border-color: #fbbf24; box-shadow: 0 0 20px rgba(251, 191, 36, 0.8); transform: scale(1.1); }
+        .tactic-btn.passive-active { border-color: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
+        .tactic-btn:disabled { opacity: 0.5; filter: grayscale(1); cursor: not-allowed; }
+        .tactic-btn.passive-active:disabled { opacity: 1; filter: none; cursor: default; }
+
+        .tactic-btn img { width: 100%; height: 100%; object-fit: cover; }
+        
+        .kbd-container { background: #1e293b; padding: 8px 4px 20px 4px; }
+        .kbd-row { display: flex; justify-content: center; gap: 4px; width: 100%; margin-bottom: 4px; }
+        .kbd-key { 
+            flex: 1; height: 42px; max-width: 36px; 
+            background: #f8fafc; color: #0f172a; 
+            border-radius: 6px; font-weight: 900; 
+            border-bottom: 4px solid #cbd5e1;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; cursor: pointer;
+        }
+        .kbd-key:active { transform: translateY(2px); border-bottom-width: 1px; background: #fbbf24; }
+        .row-2-spacer { width: 18px; } 
+        .row-3-spacer { width: 40px; } 
+
+        .skill-ready-glow { animation: skillGlow 1.5s infinite; background: #6b21a8 !important; border-color: #d8b4fe !important; box-shadow: 0 0 15px #a855f7 !important; }
+        @keyframes skillGlow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.4); } }
+
+        .locked-silhouette { filter: brightness(0) invert(0.2); opacity: 0.6; }
+
+        .dmg-text { text-shadow: 1px 1px 0px #000; transition: color 0.3s; }
+        .dmg-pop { animation: pop 0.2s ease-out; display: inline-block; }
+        @keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.5); color: #fbbf24; } 100% { transform: scale(1); } }
+        
+        .total-dmg-pop { animation: bigPop 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes bigPop { 0% { transform: scale(0.5); opacity: 0; } 60% { transform: scale(1.5); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+
+        .new-badge { animation: bounce 1s infinite; }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+
+        /* 暴風雪特效 */
+        .blizzard-blur { animation: blizzard 3s infinite; }
+        @keyframes blizzard { 0%, 100% { filter: blur(0px); opacity: 1; } 50% { filter: blur(4px); opacity: 0.4; } 25%, 75% { filter: blur(1px); opacity: 0.8; } }
+    </style>
+</head>
+<body>
+    <div id="root" class="game-container"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useCallback } = React;
+        const { motion, AnimatePresence } = window.Motion || window.framerMotion;
+
+        const Icons = {
+            Lock: (p) => <Icon path='<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' {...p} />,
+            MapIcon: (p) => <Icon path='<polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/>' {...p} />,
+            HomeIcon: (p) => <Icon path='<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' {...p} />,
+            Music: (p) => <Icon path='<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' {...p} />,
+            Book: (p) => <Icon path='<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>' {...p} />,
+            X: (p) => <Icon path='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' {...p} />,
+        };
+
+        const Icon = ({ path, className, size = 24 }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{__html: path}} />
+        );
+
+        const ASSETS = {
+            bg_start: "./assets/bg_start.jpg", bg_home: "./assets/bg_home.jpg", bg_map: "./assets/bg_map.jpg", 
+            bg_waterfall: "./assets/bg_waterfall.jpg", bg_grass: "./assets/bg_grass.jpg", bg_ice: "./assets/bg_ice.jpg", bg_fire: "./assets/bg_fire.jpg", bg_church: "./assets/bg_church.jpg", bg_final: "./assets/bg_final.jpg",
+            char_missionary: "./assets/char_missionary.png", btn_tactic_a: "./assets/btn_tactic_a.png", btn_tactic_b: "./assets/btn_tactic_b.png",
+            btn_skill_shield: "./assets/btn_skill_shield.png", btn_skill_water: "./assets/btn_skill_water.png", btn_skill_ice: "./assets/btn_skill_ice.png", btn_skill_fire: "./assets/btn_skill_fire.png", btn_skill_void: "./assets/btn_skill_void.png", btn_skill_thunder: "./assets/btn_skill_thunder.png", btn_skill_holy: "./assets/btn_skill_holy.png",
+            mob_bees: "./assets/mob_bees.png", mob_boar: "./assets/mob_boar.png", boss_dazhuang: "./assets/boss_dazhuang.png", mob_doubt: "./assets/mob_doubt.png", mob_lazy: "./assets/mob_lazy.png", boss_mirror: "./assets/boss_mirror.png", mob_rabbit: "./assets/mob_rabbit.png", mob_cloud: "./assets/mob_cloud.png", boss_sylphie: "./assets/boss_sylphie.png", mob_iceslime: "./assets/mob_iceslime.png", mob_snowbaby: "./assets/mob_snowbaby.png", boss_alpha: "./assets/boss_alpha.png", mob_firedrake: "./assets/mob_firedrake.png", mob_lavabeetle: "./assets/mob_lavabeetle.png", boss_agni: "./assets/boss_agni.png", mob_gargoyle: "./assets/mob_gargoyle.png", mob_shadowpriest: "./assets/mob_shadowpriest.png", boss_sophia: "./assets/boss_sophia.png", mob_voidhand: "./assets/mob_voidhand.png", mob_silence: "./assets/mob_silence.png", boss_lord_silence: "./assets/boss_lord_silence.png",
+            item_shield: "./assets/item_shield.png", item_amulet_water: "./assets/item_amulet_water.png", item_boots_thunder: "./assets/item_boots_thunder.png", item_amulet_ice: "./assets/item_amulet_ice.png", item_staff_fire: "./assets/item_staff_fire.png", item_staff_holy: "./assets/item_staff_holy.png", item_ring_pandora: "./assets/item_ring_pandora.png",
+            // 漫畫資源
+            comic1: "./assets/comic1.jpg", comic2: "./assets/comic2.jpg", comic3: "./assets/comic3.jpg", comic4: "./assets/comic4.jpg", comic5: "./assets/comic5.jpg", comic6: "./assets/comic6.jpg", comic7: "./assets/comic7.jpg"
+        };
+
+        const ITEMS = [
+            { id: 'village_shield', name: '村莊木盾', img: ASSETS.item_shield, btnImg: ASSETS.btn_skill_shield, type: 'active', mpCost: 100, lore: '大壯哥使用的舊盾牌，雖然有些刮痕，但依然堅固。這是你踏出家門的第一份保障。', obtain: '【我家門外】通關後 100% 獲得。', usage: '主動：獲得 40 點護盾。' },
+            { id: 'water_amulet', name: '問心水珠', img: ASSETS.item_amulet_water, btnImg: ASSETS.btn_skill_water, type: 'active', mpCost: 100, lore: '在瀑布深處凝結的奇異寶石，握在手中能感受到平靜的涼意。據說能洗滌心靈的疲憊。', obtain: '【問心瀑布】機率掉落 (普通15%/困難30%)。', usage: '主動：立即回復 250 點 HP。' },
+            { id: 'thunder_boots', name: '疾風之靴', img: ASSETS.item_boots_thunder, btnImg: ASSETS.btn_skill_thunder, type: 'passive', mpCost: 0, lore: '精靈族製作的靴子，穿上後感覺身體輕盈得像風一樣。能讓你在思考時爭取更多時間。', obtain: '【青青草原】機率掉落 (普通15%/困難30%)。', usage: '被動：每回合時間增加 8 秒。' },
+            { id: 'ice_amulet', name: '永恆冰晶', img: ASSETS.item_amulet_ice, btnImg: ASSETS.btn_skill_ice, type: 'active', mpCost: 100, lore: '阿爾法騎士盔甲上的碎片，散發著永不融化的寒氣。能凍結敵人的行動。', obtain: '【無痕冰川】機率掉落 (普通15%/困難30%)。', usage: '主動：令怪物攻擊 CD +3。' },
+            { id: 'fire_staff', name: '龍息法杖', img: ASSETS.item_staff_fire, btnImg: ASSETS.btn_skill_fire, type: 'active', mpCost: 150, lore: '鑲嵌著古龍牙齒的法杖，頂端燃燒著不滅的火焰。揮舞時能引發強大的破壞力。', obtain: '【火龍領地】機率掉落 (普通15%/困難30%)。', usage: '主動：下一次攻擊傷害 +80%。' },
+            { id: 'holy_staff', name: '大主教權杖', img: ASSETS.item_staff_holy, btnImg: ASSETS.btn_skill_holy, type: 'passive', mpCost: 0, lore: '索菲亞老師生前持有的權杖，蘊含著神聖的語言力量。對母音的共鳴特別強烈。', obtain: '【試煉教堂】機率掉落 (普通15%/困難30%)。', usage: '被動：輸入母音額外加傷。' },
+            { id: 'pandora_ring', name: '虛空之戒', img: ASSETS.item_ring_pandora, btnImg: ASSETS.btn_skill_void, type: 'active', mpCost: 200, lore: '來自虛無深處的遺物，能夠扭曲現實。戴上它，語言的規則將由你改寫。', obtain: '【最終決戰】機率掉落 (普通15%/困難30%)。', usage: '主動：當前單字直接完成。' },
+        ];
+
+        const LEVELS = [
+            { id: 'home', name: '我家門外', minTopics: 1, waves: [{ name: '憤怒的蜜蜂', img: ASSETS.mob_bees, hp: 400, dmg: 100 }, { name: '憤怒的野豬', img: ASSETS.mob_boar, hp: 500, dmg: 120 }, { name: '守衛隊長．大壯', img: ASSETS.boss_dazhuang, hp: 1500, dmg: 180, isBoss: true }], drop: 'village_shield', bg: ASSETS.bg_home, desc: "冒險的起點。", fieldEffect: "無" },
+            { id: 'waterfall', name: '問心瀑布', minTopics: 2, waves: [{ name: '自卑(心魔)', img: ASSETS.mob_doubt, hp: 600, dmg: 130 }, { name: '懶惰(心魔)', img: ASSETS.mob_lazy, hp: 700, dmg: 140 }, { name: '鏡像小明', img: ASSETS.boss_mirror, hp: 2200, dmg: 200, isBoss: true }], drop: 'water_amulet', bg: ASSETS.bg_waterfall, desc: "面對內心的恐懼。", fieldEffect: "濕滑地面：回合時間縮短" },
+            { id: 'grassland', name: '青青草原', minTopics: 2, waves: [{ name: '疾風兔', img: ASSETS.mob_rabbit, hp: 800, dmg: 150 }, { name: '惡作劇雲朵', img: ASSETS.mob_cloud, hp: 900, dmg: 160 }, { name: '精靈射手．希爾微', img: ASSETS.boss_sylphie, hp: 3000, dmg: 240, isBoss: true }], drop: 'thunder_boots', bg: ASSETS.bg_grass, desc: "小心那些快箭。", fieldEffect: "順風：敵人CD減少" },
+            { id: 'glacier', name: '無痕冰川', minTopics: 3, waves: [{ name: '結冰史萊姆', img: ASSETS.mob_iceslime, hp: 1100, dmg: 180 }, { name: '雪怪寶寶', img: ASSETS.mob_snowbaby, hp: 1300, dmg: 200 }, { name: '冰封騎士．阿爾法', img: ASSETS.boss_alpha, hp: 4000, dmg: 300, isBoss: true }], drop: 'ice_amulet', bg: ASSETS.bg_ice, desc: "寒冷會凍結時間。", fieldEffect: "暴風雪：視線模糊" },
+            { id: 'dragon', name: '火龍領地', minTopics: 3, waves: [{ name: '噴火小龍', img: ASSETS.mob_firedrake, hp: 1500, dmg: 220 }, { name: '熔岩甲蟲', img: ASSETS.mob_lavabeetle, hp: 1700, dmg: 240 }, { name: '古龍．阿格尼', img: ASSETS.boss_agni, hp: 5000, dmg: 350, isBoss: true }], drop: 'fire_staff', bg: ASSETS.bg_fire, desc: "燃燒殆盡吧！", fieldEffect: "灼熱：每回合扣血" },
+            { id: 'church', name: '試煉教堂', minTopics: 4, waves: [{ name: '石像鬼', img: ASSETS.mob_gargoyle, hp: 2000, dmg: 260 }, { name: '暗影牧師', img: ASSETS.mob_shadowpriest, hp: 2200, dmg: 280 }, { name: '大主教．索菲亞', img: ASSETS.boss_sophia, hp: 6500, dmg: 400, isBoss: true }], drop: 'holy_staff', bg: ASSETS.bg_church, desc: "神聖的最終試煉。", fieldEffect: "聖光：治療減半/禁盾" },
+            { id: 'final', name: '最終決戰', minTopics: 5, waves: [{ name: '虛空之手', img: ASSETS.mob_voidhand, hp: 3000, dmg: 300 }, { name: '沉默陰影', img: ASSETS.mob_silence, hp: 3500, dmg: 320 }, { name: '沉默之主．虛無', img: ASSETS.boss_lord_silence, hp: 10000, dmg: 500, isBoss: true }], drop: 'pandora_ring', bg: ASSETS.bg_final, desc: "語言的存亡之戰。", fieldEffect: "虛空：隨機封鎖技能" },
+        ];
+
+        // 漫畫設定更新
+        const STORIES = {
+            home: { title: "出發", image: ASSETS.comic1, content: "大壯哥拍了拍我的肩膀：「外面的世界很危險，但如果是你的話，一定沒問題的。」\n\n我握緊了手中的盾牌，回頭看了一眼生活了十年的村莊。\n\n「我會回來的，帶著傳說一起。」" },
+            waterfall: { title: "倒影", image: ASSETS.comic2, content: "瀑布的水聲轟隆作響，但我卻聽到了另一個聲音。\n\n『你做不到的。』鏡中的我這樣說。\n\n我深吸一口氣，打破了水面。「不，我已經做到了。」" },
+            grassland: { title: "風之語", image: ASSETS.comic3, content: "希爾微收起了弓箭，風吹過她的長髮。\n\n「你的語言比箭矢更快，」她微笑道，「精靈的祝福將伴隨你。」\n\n腳下的靴子似乎輕盈了許多。" },
+            glacier: { title: "凍結的時間", image: ASSETS.comic4, content: "阿爾法的盔甲散落一地，裡面卻空無一人，只有一塊永不融化的冰晶。\n\n或許他早已死去，支撐他的只是對守護的執念。\n\n我撿起冰晶，感受到了那份沉重的責任。" },
+            dragon: { title: "龍的認可", image: ASSETS.comic5, content: "古龍阿格尼低下了高傲的頭顱。\n\n火焰不再是毀滅，而是力量的象徵。\n\n手中的法杖滾燙，彷彿握著一顆跳動的心臟。" },
+            church: { title: "最後的教誨", image: ASSETS.comic6, content: "索菲亞老師的身影在聖光中消散。\n\n「語言不僅僅是工具，它是連接心靈的橋樑。」\n\n教堂的鐘聲響起，彷彿在為這位偉大的導師送行。" },
+            final: { title: "新的篇章", image: ASSETS.comic7, content: "虛無消散了，世界重新充滿了聲音。\n\n人們的歡笑、鳥兒的歌唱、風的低語。\n\n我合上書本，這就是我的故事，也是我們的故事。" }
+        };
+
+		const WORDS_DB = {
+			'P.3': {
+				'School Events (學校活動)': [
+					{ en: "Open Day", zh: "開放日" },
+					{ en: "Parents' Day", zh: "家長日" },
+					{ en: "Sports Day", zh: "陸運會 / 運動會" },
+					{ en: "the swimming gala", zh: "水運會" },
+					{ en: "the school concert", zh: "學校音樂會" },
+					{ en: "the school play", zh: "學校話劇" },
+					{ en: "the school fair", zh: "學校嘉年華 / 賣物會" },
+					{ en: "the school picnic", zh: "學校旅行" },
+					{ en: "Test Week", zh: "測驗週" },
+					{ en: "Exam Week", zh: "考試週" }
+				],
+				'Free Time (空閒活動)': [
+					{ en: "play football", zh: "踢足球" },
+					{ en: "play basketball", zh: "打籃球" },
+					{ en: "play badminton", zh: "打羽毛球" },
+					{ en: "play table tennis", zh: "打乒乓球" },
+					{ en: "play tennis", zh: "打網球" },
+					{ en: "play Chinese checkers", zh: "玩波子棋" },
+					{ en: "play Chinese chess", zh: "玩中國象棋" },
+					{ en: "play chess", zh: "玩國際象棋" },
+					{ en: "play the piano", zh: "彈鋼琴" },
+					{ en: "play the violin", zh: "拉小提琴" },
+					{ en: "play the recorder", zh: "吹牧童笛" }
+				],
+				'Places & Activities (地點與活動)': [
+					{ en: "build a sandcastle", zh: "堆沙堡" },
+					{ en: "look at shells", zh: "看貝殼" },
+					{ en: "fly a kite", zh: "放風箏" },
+					{ en: "have a barbecue", zh: "燒烤 (BBQ)" },
+					{ en: "have a picnic", zh: "去野餐" },
+					{ en: "take photos", zh: "拍照" },
+					{ en: "go camping", zh: "去露營" },
+					{ en: "feed animals", zh: "餵動物" },
+					{ en: "plant vegetables", zh: "種植蔬菜" },
+					{ en: "pick fruit", zh: "摘水果" },
+					{ en: "make bread", zh: "做麵包" }
+				],
+				'Hobbies (嗜好)': [
+					{ en: "cycling", zh: "踏單車" },
+					{ en: "ice-skating", zh: "溜冰" },
+					{ en: "shopping", zh: "購物" },
+					{ en: "chatting with friends", zh: "與朋友聊天" },
+					{ en: "playing board games", zh: "玩桌上遊戲" },
+					{ en: "playing card games", zh: "玩紙牌遊戲" },
+					{ en: "playing computer games", zh: "玩電腦遊戲" },
+					{ en: "reading storybooks", zh: "閱讀故事書" },
+					{ en: "reading magazines", zh: "閱讀雜誌" },
+					{ en: "doing puzzles", zh: "玩拼圖" },
+					{ en: "watching TV", zh: "看電視" },
+					{ en: "watching cartoons", zh: "看卡通片" },
+					{ en: "listening to music", zh: "聽音樂" },
+					{ en: "making models", zh: "製作模型" }
+				],
+				'Food Quantifiers (食物量詞)': [
+					{ en: "chicken wings", zh: "雞翼" },
+					{ en: "French fries", zh: "薯條" },
+					{ en: "potato chips", zh: "薯片" },
+					{ en: "pizza", zh: "薄餅" },
+					{ en: "a box of...", zh: "一盒" },
+					{ en: "a packet of...", zh: "一包" },
+					{ en: "a slice of...", zh: "一塊" },
+					{ en: "hamburger", zh: "漢堡包" },
+					{ en: "hot dog", zh: "熱狗" },
+					{ en: "a bottle of...", zh: "一瓶" },
+					{ en: "a can of...", zh: "一罐" },
+					{ en: "a cup of...", zh: "一杯" },
+					{ en: "lemon tea", zh: "檸檬茶" },
+					{ en: "cola", zh: "可樂" },
+					{ en: "hot chocolate", zh: "熱朱古力" },
+					{ en: "coffee", zh: "咖啡" }
+				],
+				'Ingredients (食材)': [
+					{ en: "beef", zh: "牛肉" },
+					{ en: "pork", zh: "豬肉" },
+					{ en: "chicken", zh: "雞肉" },
+					{ en: "fish", zh: "魚肉" },
+					{ en: "lettuce", zh: "生菜" },
+					{ en: "carrot", zh: "紅蘿蔔" },
+					{ en: "potato", zh: "馬鈴薯" },
+					{ en: "onion", zh: "洋蔥" },
+					{ en: "garlic", zh: "蒜頭" },
+					{ en: "pepper", zh: "胡椒粉" },
+					{ en: "salt", zh: "鹽" },
+					{ en: "sugar", zh: "糖" }
+				],
+				'Cooking Actions (烹飪動作)': [
+					{ en: "beat", zh: "攪拌" },
+					{ en: "steam", zh: "蒸" },
+					{ en: "bake", zh: "焗" },
+					{ en: "add", zh: "加入" },
+					{ en: "cook", zh: "煮" },
+					{ en: "heat", zh: "加熱" },
+					{ en: "mix", zh: "混合" },
+					{ en: "put", zh: "放" },
+					{ en: "fry", zh: "煎/炸/炒" },
+					{ en: "cut", zh: "切" },
+					{ en: "fork", zh: "叉" },
+					{ en: "knife", zh: "刀" },
+					{ en: "spoon", zh: "匙羹" },
+					{ en: "chopsticks", zh: "筷子" },
+					{ en: "bowl", zh: "碗" },
+					{ en: "plate", zh: "碟" },
+					{ en: "pan", zh: "平底鍋" },
+					{ en: "pot", zh: "鍋" }
+				],
+				'Feelings (感受)': [
+					{ en: "excited", zh: "興奮的" },
+					{ en: "surprised", zh: "驚喜的 / 驚訝的" },
+					{ en: "scared", zh: "害怕的" },
+					{ en: "angry", zh: "憤怒的" },
+					{ en: "worried", zh: "擔心的" },
+					{ en: "sad", zh: "傷心的" }
+				],
+				'Past Activities (過去活動)': [
+					{ en: "paint pictures", zh: "畫畫" },
+					{ en: "study for my exams", zh: "溫習考試" },
+					{ en: "practise the piano", zh: "練習鋼琴" },
+					{ en: "have afternoon tea", zh: "吃下午茶" },
+					{ en: "go on rides", zh: "玩機動遊戲" },
+					{ en: "have a buffet meal", zh: "吃自助餐" },
+					{ en: "watch a film", zh: "看電影" }
+				],
+				'Festivals (節日)': [
+					{ en: "go to a flower market", zh: "去花市" },
+					{ en: "get red packets", zh: "收利是" },
+					{ en: "visit relatives", zh: "拜訪親戚" },
+					{ en: "watch fireworks", zh: "看煙花" },
+					{ en: "get presents", zh: "收禮物" },
+					{ en: "eat chocolate eggs", zh: "吃朱古力蛋" },
+					{ en: "watch dragon boat races", zh: "看龍舟比賽" },
+					{ en: "eat rice dumplings", zh: "吃粽子" },
+					{ en: "look at the moon", zh: "賞月" },
+					{ en: "eat moon cakes", zh: "吃月餅" },
+					{ en: "play with lanterns", zh: "玩燈籠" }
+				],
+				'Gifts (禮物)': [
+					{ en: "a card", zh: "卡" },
+					{ en: "a towel", zh: "毛巾" },
+					{ en: "a purse", zh: "銀包(女裝)" },
+					{ en: "a wallet", zh: "銀包(男裝)" },
+					{ en: "a handbag", zh: "手袋" },
+					{ en: "a watch", zh: "手錶" },
+					{ en: "have a birthday party", zh: "舉行生日會" },
+					{ en: "sing 'Happy Birthday'", zh: "唱生日歌" },
+					{ en: "blow out the candles", zh: "吹蠟燭" },
+					{ en: "cut the cake", zh: "切蛋糕" },
+					{ en: "watch a magic show", zh: "看魔術表演" }
+				],
+				'Subjects (科目)': [
+					{ en: "English", zh: "英文科" },
+					{ en: "Chinese", zh: "中文科" },
+					{ en: "Maths", zh: "數學科" },
+					{ en: "General Studies", zh: "常識科" },
+					{ en: "Computer Studies", zh: "電腦科" },
+					{ en: "Music", zh: "音樂科" },
+					{ en: "PE", zh: "體育科" },
+					{ en: "Visual Arts", zh: "視覺藝術科" },
+					{ en: "between", zh: "在...中間" },
+					{ en: "in front of", zh: "在...前面" },
+					{ en: "behind", zh: "在...後面" },
+					{ en: "next to", zh: "在...旁邊" }
+				],
+				'Character (性格)': [
+					{ en: "brave", zh: "勇敢的" },
+					{ en: "cheerful", zh: "開朗的" },
+					{ en: "funny", zh: "有趣的" },
+					{ en: "gentle", zh: "溫柔的" },
+					{ en: "honest", zh: "誠實的" },
+					{ en: "kind", zh: "仁慈的" },
+					{ en: "popular", zh: "受歡迎的" },
+					{ en: "smart", zh: "聰明的" },
+					{ en: "play tricks on", zh: "戲弄" },
+					{ en: "laugh at", zh: "取笑" },
+					{ en: "shout at", zh: "呼喝" },
+					{ en: "look after", zh: "照顧" }
+				],
+				'Stories (故事)': [
+					{ en: "beautiful", zh: "美麗的" },
+					{ en: "ugly", zh: "醜陋的" },
+					{ en: "wise", zh: "有智慧的" },
+					{ en: "silly", zh: "愚蠢的" },
+					{ en: "careful", zh: "小心的" },
+					{ en: "careless", zh: "粗心的" },
+					{ en: "rich", zh: "富有的" },
+					{ en: "poor", zh: "貧窮的" },
+					{ en: "Once upon a time", zh: "很久以前" },
+					{ en: "One day", zh: "有一天" },
+					{ en: "Suddenly", zh: "突然" },
+					{ en: "In the end", zh: "最後" }
+				]
+			},
+			'P.4': {
+				'Hobbies (興趣)': [
+					{ en: "jogging", zh: "慢跑" },
+					{ en: "rollerblading", zh: "滾軸溜冰" },
+					{ en: "ice-skating", zh: "溜冰" },
+					{ en: "collecting badges", zh: "收集徽章" },
+					{ en: "collecting stamps", zh: "收集郵票" },
+					{ en: "playing the flute", zh: "吹長笛" },
+					{ en: "playing the violin", zh: "拉小提琴" },
+					{ en: "doing karate", zh: "練空手道" },
+					{ en: "doing magic tricks", zh: "變魔術" }
+				],
+				'Adjectives (形容詞)': [
+					{ en: "big", zh: "大" },
+					{ en: "small", zh: "小" },
+					{ en: "fat", zh: "肥" },
+					{ en: "thin", zh: "瘦" },
+					{ en: "tall", zh: "高" },
+					{ en: "short", zh: "矮" },
+					{ en: "heavy", zh: "重" },
+					{ en: "light", zh: "輕" },
+					{ en: "old", zh: "老" },
+					{ en: "young", zh: "年輕" },
+					{ en: "long", zh: "長" }
+				],
+				'Food Quantifiers (食物量詞)': [
+					{ en: "a bunch of", zh: "一串" },
+					{ en: "a carton of", zh: "一盒" },
+					{ en: "a jar of", zh: "一罐" },
+					{ en: "a packet of", zh: "一包" },
+					{ en: "a tin of", zh: "一罐" },
+					{ en: "a loaf of", zh: "一條" },
+					{ en: "a bar of", zh: "一排" },
+					{ en: "bananas", zh: "香蕉" },
+					{ en: "soya milk", zh: "豆奶" },
+					{ en: "peanut butter", zh: "花生醬" },
+					{ en: "seaweed", zh: "紫菜" },
+					{ en: "sardines", zh: "沙甸魚" },
+					{ en: "bread", zh: "麵包" },
+					{ en: "chocolate", zh: "朱古力" }
+				],
+				'Dishes (菜式)': [
+					{ en: "dumplings", zh: "水餃" },
+					{ en: "soup noodles", zh: "湯麵" },
+					{ en: "pork chops", zh: "豬扒" },
+					{ en: "green salad", zh: "青沙律" },
+					{ en: "prawn salad", zh: "大蝦沙律" },
+					{ en: "chicken curry", zh: "咖喱雞" },
+					{ en: "beef curry", zh: "咖喱牛" },
+					{ en: "blueberry cheesecake", zh: "藍莓芝士蛋糕" },
+					{ en: "pumpkin pie", zh: "南瓜批" }
+				],
+				'Actions (自理動作)': [
+					{ en: "climb the stairs", zh: "爬樓梯" },
+					{ en: "comb my hair", zh: "梳頭" },
+					{ en: "do up my buttons", zh: "扣鈕扣" },
+					{ en: "tie my shoelaces", zh: "綁鞋帶" },
+					{ en: "put on my shoes", zh: "穿鞋" },
+					{ en: "pack my school bag", zh: "收拾書包" },
+					{ en: "carry my school bag", zh: "背書包" }
+				],
+				'Future Plans (未來計劃)': [
+					{ en: "Ocean Park", zh: "海洋公園" },
+					{ en: "Big Buddha", zh: "天壇大佛" },
+					{ en: "look at the beautiful view", zh: "欣賞美景" },
+					{ en: "visit a museum", zh: "參觀博物館" },
+					{ en: "ride on the cable car", zh: "乘坐纜車" },
+					{ en: "watch a concert", zh: "觀看音樂會" },
+					{ en: "watch a ballet", zh: "觀看芭蕾舞" },
+					{ en: "eat seafood", zh: "吃海鮮" }
+				],
+				'Street Places (街道設施)': [
+					{ en: "bakery", zh: "麵包店" },
+					{ en: "news-stand", zh: "報紙檔" },
+					{ en: "convenience store", zh: "便利店" },
+					{ en: "health and beauty store", zh: "個人護理店" },
+					{ en: "clinic", zh: "診所" },
+					{ en: "hospital", zh: "醫院" },
+					{ en: "police station", zh: "警署" },
+					{ en: "fire station", zh: "消防局" },
+					{ en: "post office", zh: "郵局" },
+					{ en: "sports centre", zh: "體育館" }
+				],
+				'Food Types (食物種類)': [
+					{ en: "lychees", zh: "荔枝" },
+					{ en: "longans", zh: "龍眼" },
+					{ en: "broccoli", zh: "西蘭花" },
+					{ en: "cauliflower", zh: "椰菜花" },
+					{ en: "cabbage", zh: "椰菜" },
+					{ en: "lettuce", zh: "生菜" },
+					{ en: "spinach", zh: "菠菜" },
+					{ en: "macaroni", zh: "通心粉" },
+					{ en: "spaghetti", zh: "意粉" },
+					{ en: "beef", zh: "牛肉" },
+					{ en: "pork", zh: "豬肉" },
+					{ en: "chicken", zh: "雞肉" }
+				],
+				'Food Groups (食物類別)': [
+					{ en: "milk", zh: "牛奶" },
+					{ en: "cheese", zh: "芝士" },
+					{ en: "yoghurt", zh: "乳酪" },
+					{ en: "rice", zh: "米飯" },
+					{ en: "bread", zh: "麵包" },
+					{ en: "noodles", zh: "麵條" },
+					{ en: "pasta", zh: "意粉" },
+					{ en: "soft drinks", zh: "汽水" },
+					{ en: "cakes", zh: "蛋糕" },
+					{ en: "sweets", zh: "糖果" },
+					{ en: "ice cream", zh: "雪糕" },
+					{ en: "French fries", zh: "薯條" },
+					{ en: "potato chips", zh: "薯片" },
+					{ en: "fried chicken wings", zh: "炸雞翼" }
+				],
+				'Resolutions (新年願望)': [
+					{ en: "do revision", zh: "溫習" },
+					{ en: "keep a diary", zh: "寫日記" },
+					{ en: "save more pocket money", zh: "儲更多零用錢" },
+					{ en: "tidy my bookshelf", zh: "整理書架" },
+					{ en: "eat less junk food", zh: "少吃垃圾食物" }
+				],
+				'Good Habits (良好習慣)': [
+					{ en: "change my handkerchief", zh: "更換手帕" },
+					{ en: "change my socks", zh: "更換襪子" },
+					{ en: "change my uniform", zh: "更換校服" },
+					{ en: "cut my fingernails", zh: "剪指甲" },
+					{ en: "wash my sports shoes", zh: "清洗運動鞋" },
+					{ en: "help with the housework", zh: "幫忙做家務" }
+				],
+				'TV Programmes (電視節目)': [
+					{ en: "cartoons", zh: "卡通片" },
+					{ en: "documentaries", zh: "紀錄片" },
+					{ en: "the news", zh: "新聞" },
+					{ en: "the weather report", zh: "天氣報告" },
+					{ en: "dramas", zh: "劇集" },
+					{ en: "sports programmes", zh: "體育節目" },
+					{ en: "pop music shows", zh: "流行音樂節目" },
+					{ en: "game shows", zh: "遊戲節目" },
+					{ en: "exciting", zh: "刺激的" },
+					{ en: "informative", zh: "增廣見聞的" },
+					{ en: "interesting", zh: "有趣的" },
+					{ en: "touching", zh: "感人的" },
+					{ en: "silly", zh: "愚蠢好笑的" },
+					{ en: "boring", zh: "沉悶的" }
+				]
+			},
+			'P.5': {
+				'Adverbs (副詞)': [
+					{ en: "carefully", zh: "小心地" },
+					{ en: "carelessly", zh: "粗心地" },
+					{ en: "politely", zh: "有禮地" },
+					{ en: "rudely", zh: "無禮地 (粗魯地)" },
+					{ en: "quietly", zh: "安靜地" },
+					{ en: "noisily", zh: "嘈吵地" },
+					{ en: "patiently", zh: "耐心地" },
+					{ en: "impatiently", zh: "不耐煩地" },
+					{ en: "early", zh: "早地" },
+					{ en: "late", zh: "遲地" },
+					{ en: "softly", zh: "溫柔地" }
+				],
+				'Relationships (人際關係)': [
+					{ en: "help ... with", zh: "幫忙做..." },
+					{ en: "share ... with", zh: "與...分享" },
+					{ en: "get on with", zh: "與...相處" },
+					{ en: "quarrel with", zh: "與...爭吵" },
+					{ en: "argue with", zh: "與...理論" },
+					{ en: "be nice to", zh: "對...好" },
+					{ en: "be mean to", zh: "對...刻薄" },
+					{ en: "listen to", zh: "聆聽..." },
+					{ en: "talk to", zh: "與...交談" },
+					{ en: "shout at", zh: "對...呼喝" },
+					{ en: "laugh at", zh: "取笑..." }
+				],
+				'Clothing & Looks (衣著與外貌)': [
+					{ en: "bow tie", zh: "蝴蝶結領帶" },
+					{ en: "vest", zh: "背心" },
+					{ en: "suit", zh: "西裝" },
+					{ en: "V-neck sweater", zh: "V領毛衣" },
+					{ en: "mittens", zh: "連指手套" },
+					{ en: "gloves", zh: "手套" },
+					{ en: "curly hair", zh: "捲髮" },
+					{ en: "straight hair", zh: "直髮" },
+					{ en: "round face", zh: "圓臉" },
+					{ en: "long face", zh: "長臉" },
+					{ en: "beard", zh: "鬍鬚 (下巴)" },
+					{ en: "moustache", zh: "鬍鬚 (嘴唇上)" },
+					{ en: "glasses", zh: "眼鏡" }
+				],
+				'Accessories (飾物)': [
+					{ en: "crystal", zh: "水晶" },
+					{ en: "gold", zh: "金" },
+					{ en: "diamond", zh: "鑽石" },
+					{ en: "silver", zh: "銀" },
+					{ en: "bracelet", zh: "手鍊" },
+					{ en: "necklace", zh: "頸鍊" },
+					{ en: "ring", zh: "戒指" },
+					{ en: "earrings", zh: "耳環" },
+					{ en: "comb", zh: "梳子" },
+					{ en: "hairbrush", zh: "髮刷" },
+					{ en: "hairclip", zh: "髮夾" },
+					{ en: "headband", zh: "頭箍" },
+					{ en: "mirror", zh: "鏡子" },
+					{ en: "backpack", zh: "背包" }
+				],
+				'Activities (旅遊與活動)': [
+					{ en: "meet relatives", zh: "探望親戚" },
+					{ en: "buy souvenirs", zh: "買紀念品" },
+					{ en: "eat local food", zh: "吃當地美食" },
+					{ en: "give presents", zh: "送禮物" },
+					{ en: "send postcards", zh: "寄明信片" },
+					{ en: "take photos", zh: "拍照" },
+					{ en: "make videos", zh: "拍影片" }
+				],
+				'Injuries (受傷)': [
+					{ en: "cut my finger", zh: "割傷手指" },
+					{ en: "burn my arm", zh: "燙傷手臂" },
+					{ en: "twist my ankle", zh: "扭傷腳踝" },
+					{ en: "bang my head", zh: "撞傷頭部" },
+					{ en: "break my arm", zh: "摔斷手臂" },
+					{ en: "break my leg", zh: "摔斷腿" },
+					{ en: "scrape my knee", zh: "擦傷膝蓋" },
+					{ en: "scrape my elbow", zh: "擦傷手肘" }
+				],
+				'Illnesses (疾病)': [
+					{ en: "cold", zh: "感冒" },
+					{ en: "cough", zh: "咳嗽" },
+					{ en: "fever", zh: "發燒" },
+					{ en: "the flu", zh: "流行性感冒" },
+					{ en: "headache", zh: "頭痛" },
+					{ en: "stomachache", zh: "胃痛" },
+					{ en: "toothache", zh: "牙痛" },
+					{ en: "sore throat", zh: "喉嚨痛" },
+					{ en: "cough syrup", zh: "止咳糖漿" },
+					{ en: "pills", zh: "藥丸" },
+					{ en: "throat sweets", zh: "喉糖" }
+				],
+				'Country Parks (郊野公園)': [
+					{ en: "picnic site", zh: "野餐地點" },
+					{ en: "campsite", zh: "營地" },
+					{ en: "visitor centre", zh: "遊客中心" },
+					{ en: "information board", zh: "資訊板" },
+					{ en: "barbecue site", zh: "燒烤場" },
+					{ en: "hiking trail", zh: "遠足徑" },
+					{ en: "public telephone", zh: "公眾電話" },
+					{ en: "public toilet", zh: "公廁" }
+				],
+				'Transport (交通)': [
+					{ en: "comfortable", zh: "舒適的" },
+					{ en: "uncomfortable", zh: "不舒適的" },
+					{ en: "convenient", zh: "方便的" },
+					{ en: "inconvenient", zh: "不方便的" },
+					{ en: "crowded", zh: "擁擠的" },
+					{ en: "not crowded", zh: "不擁擠的" },
+					{ en: "expensive", zh: "昂貴的" },
+					{ en: "cheap", zh: "便宜的" },
+					{ en: "fast", zh: "快的" },
+					{ en: "slow", zh: "慢的" }
+				],
+				'Cooking & Crafts (製作)': [
+					{ en: "add", zh: "加入" },
+					{ en: "bake", zh: "烘烤" },
+					{ en: "beat", zh: "攪打(蛋)" },
+					{ en: "boil", zh: "煮沸" },
+					{ en: "chop", zh: "切碎" },
+					{ en: "fry", zh: "油炸(煎)" },
+					{ en: "mix", zh: "混合" },
+					{ en: "pour", zh: "倒" },
+					{ en: "steam", zh: "蒸" },
+					{ en: "glue", zh: "塗膠水" },
+					{ en: "stick", zh: "黏貼" },
+					{ en: "cut", zh: "剪下" },
+					{ en: "fold", zh: "摺疊" },
+					{ en: "tie", zh: "繫(結)" },
+					{ en: "a saucepan", zh: "平底深鍋" },
+					{ en: "a spatula", zh: "鑊鏟" }
+				],
+				'Materials (物料)': [
+					{ en: "cardboard", zh: "硬紙板" },
+					{ en: "cloth", zh: "布料" },
+					{ en: "leather", zh: "皮革" },
+					{ en: "metal", zh: "金屬" },
+					{ en: "plastic", zh: "塑膠" },
+					{ en: "wood", zh: "木頭" },
+					{ en: "china", zh: "瓷器" },
+					{ en: "glass", zh: "玻璃" },
+					{ en: "shoe box", zh: "鞋盒" },
+					{ en: "cushion", zh: "咕𠱸 (靠墊)" },
+					{ en: "belt", zh: "皮帶" },
+					{ en: "kettle", zh: "水壺" },
+					{ en: "vase", zh: "花瓶" }
+				],
+				'Crime (罪案)': [
+					{ en: "burglar", zh: "入屋竊賊" },
+					{ en: "robber", zh: "強盜" },
+					{ en: "break into", zh: "闖入" },
+					{ en: "steal", zh: "偷竊" },
+					{ en: "escape", zh: "逃跑" },
+					{ en: "arrest", zh: "逮捕" },
+					{ en: "shoot at", zh: "射擊" },
+					{ en: "set off the alarm", zh: "觸發警報" },
+					{ en: "call the police", zh: "報警" },
+					{ en: "cry for help", zh: "大聲呼救" }
+				],
+				'World Travel (世界旅遊)': [
+					{ en: "eat sushi", zh: "吃壽司" },
+					{ en: "visit a fish market", zh: "參觀魚市場" },
+					{ en: "go skiing", zh: "滑雪" },
+					{ en: "go on a boat trip", zh: "乘船遊覽" },
+					{ en: "take a ride in a hot-air balloon", zh: "乘坐熱氣球" },
+					{ en: "visit a castle", zh: "參觀城堡" },
+					{ en: "visit a temple", zh: "參觀寺廟" },
+					{ en: "visit a cave", zh: "參觀洞穴" },
+					{ en: "look at waterfalls", zh: "觀賞瀑布" },
+					{ en: "theme park", zh: "主題樂園" },
+					{ en: "amusement park", zh: "遊樂場" }
+				],
+				'Jobs & Talents (職業與才能)': [
+					{ en: "actor", zh: "男演員" },
+					{ en: "actress", zh: "女演員" },
+					{ en: "director", zh: "導演" },
+					{ en: "conductor", zh: "指揮家" },
+					{ en: "scientist", zh: "科學家" },
+					{ en: "animator", zh: "動畫師" },
+					{ en: "pianist", zh: "鋼琴家" },
+					{ en: "musician", zh: "音樂家" },
+					{ en: "athlete", zh: "運動員" },
+					{ en: "dancer", zh: "舞者" }
+				]
+			},
+			'P.6': {
+				'Jobs (未來的職業)': [
+					{ en: "architect", zh: "建築師" },
+					{ en: "astronaut", zh: "太空人" },
+					{ en: "business person", zh: "商人" },
+					{ en: "computer programmer", zh: "電腦編程員" },
+					{ en: "engineer", zh: "工程師" },
+					{ en: "fashion designer", zh: "時裝設計師" },
+					{ en: "fireman", zh: "消防員" },
+					{ en: "flight attendant", zh: "空中服務員" },
+					{ en: "lawyer", zh: "律師" },
+					{ en: "model", zh: "模特兒" },
+					{ en: "pilot", zh: "飛機師" },
+					{ en: "police officer", zh: "警察" },
+					{ en: "reporter", zh: "記者" },
+					{ en: "social worker", zh: "社工" },
+					{ en: "tour guide", zh: "導遊" }
+				],
+				'Describing People (形容人的優點)': [
+					{ en: "calm", zh: "冷靜的" },
+					{ en: "curious", zh: "好奇的" },
+					{ en: "attentive", zh: "細心的 / 專注的" },
+					{ en: "creative", zh: "有創意的" },
+					{ en: "brave", zh: "勇敢的" },
+					{ en: "hard-working", zh: "勤奮的" },
+					{ en: "understanding", zh: "善解人意的" },
+					{ en: "caring", zh: "關懷別人的" }
+				],
+				'Book Characters (書中角色)': [
+					{ en: "cruel", zh: "殘忍的" },
+					{ en: "dishonest", zh: "不誠實的" },
+					{ en: "greedy", zh: "貪心的" },
+					{ en: "proud", zh: "驕傲的 / 自大的" },
+					{ en: "selfish", zh: "自私的" },
+					{ en: "silly", zh: "愚蠢的 / 傻的" },
+					{ en: "ugly", zh: "醜陋的" },
+					{ en: "wicked", zh: "邪惡的 / 壞心腸的" }
+				],
+				'Phrasal Verbs (片語動詞)': [
+					{ en: "blow up", zh: "爆炸 / 炸毀" },
+					{ en: "break down", zh: "壞了 / 故障" },
+					{ en: "dress up", zh: "裝扮 / 喬裝" },
+					{ en: "fall out with", zh: "吵架 / 鬧翻" },
+					{ en: "get away", zh: "逃脫 / 離開" },
+					{ en: "get into trouble", zh: "陷入麻煩" },
+					{ en: "look for", zh: "尋找" },
+					{ en: "make up", zh: "編造 (故事)" },
+					{ en: "set off", zh: "出發 / 動身" },
+					{ en: "turn into", zh: "變成" }
+				],
+				'Natural Disasters (自然災害)': [
+					{ en: "earthquake", zh: "地震" },
+					{ en: "drought", zh: "乾旱" },
+					{ en: "tsunami", zh: "海嘯" },
+					{ en: "flood", zh: "水災 / 洪水" },
+					{ en: "typhoon", zh: "颱風" },
+					{ en: "bright", zh: "光亮" },
+					{ en: "dark", zh: "黑暗" },
+					{ en: "clean", zh: "乾淨" },
+					{ en: "dirty", zh: "骯髒" },
+					{ en: "rich", zh: "富有" },
+					{ en: "poor", zh: "貧窮" },
+					{ en: "cheap", zh: "便宜" },
+					{ en: "expensive", zh: "昂貴" },
+					{ en: "strong", zh: "強壯" },
+					{ en: "weak", zh: "虛弱" }
+				],
+				'Charity Activities (慈善活動)': [
+					{ en: "go on a charity walk", zh: "參加慈善步行" },
+					{ en: "sell flags", zh: "賣旗" },
+					{ en: "buy flags", zh: "買旗" },
+					{ en: "visit a home for the elderly", zh: "探訪老人院" },
+					{ en: "visit a children's home", zh: "探訪兒童院" },
+					{ en: "donate money to charity", zh: "捐款給慈善機構" },
+					{ en: "sell raffle tickets", zh: "售賣獎券" },
+					{ en: "plant trees", zh: "種樹" }
+				],
+				'Festival Traditions (節日傳統)': [
+					{ en: "rice cakes", zh: "年糕" },
+					{ en: "turnip cakes", zh: "蘿蔔糕" },
+					{ en: "melon seeds", zh: "瓜子" },
+					{ en: "watch fireworks", zh: "看煙花" },
+					{ en: "watch parades", zh: "看巡遊" },
+					{ en: "eat moon cakes", zh: "吃月餅" },
+					{ en: "starfruit", zh: "楊桃" },
+					{ en: "tie riddles to lanterns", zh: "把燈謎繫在燈籠上" }
+				],
+				'Wonderful World (奇觀)': [
+					{ en: "bridge", zh: "橋" },
+					{ en: "lake", zh: "湖" },
+					{ en: "ocean", zh: "海洋" },
+					{ en: "waterfall", zh: "瀑布" },
+					{ en: "desert", zh: "沙漠" },
+					{ en: "mountain", zh: "山" },
+					{ en: "river", zh: "河流" },
+					{ en: "statue", zh: "雕像" },
+					{ en: "tower", zh: "塔" }
+				],
+				'Famous Places (著名景點)': [
+					{ en: "coral reef", zh: "珊瑚礁" },
+					{ en: "hot spring", zh: "溫泉" },
+					{ en: "rainforest", zh: "雨林" },
+					{ en: "island", zh: "島嶼" },
+					{ en: "volcano", zh: "火山" },
+					{ en: "palace", zh: "皇宮 / 宮殿" },
+					{ en: "stadium", zh: "體育館" },
+					{ en: "temple", zh: "寺廟" }
+				],
+				'The Environment (環保)': [
+					{ en: "bring your own bag", zh: "自備購物袋" },
+					{ en: "water bottle", zh: "水樽" },
+					{ en: "facecloth", zh: "面巾" },
+					{ en: "turn off the lights", zh: "關燈" },
+					{ en: "recycle", zh: "回收" },
+					{ en: "reuse", zh: "重用" },
+					{ en: "leave the tap on", zh: "開著水龍頭" },
+					{ en: "have baths", zh: "浸浴" },
+					{ en: "disposable products", zh: "即棄產品" },
+					{ en: "tissues", zh: "紙巾" }
+				],
+				'Threats to Animals (動物威脅)': [
+					{ en: "catch endangered animals", zh: "捕捉瀕危動物" },
+					{ en: "destroy forests", zh: "破壞森林" },
+					{ en: "dump waste into the sea", zh: "把廢物傾倒入海" },
+					{ en: "force animals to fight", zh: "強迫動物互相搏鬥" },
+					{ en: "hunt animals", zh: "獵殺動物" },
+					{ en: "keep rare animals as pets", zh: "飼養稀有動物" },
+					{ en: "pollute the environment", zh: "污染環境" },
+					{ en: "use animals to test products", zh: "利用動物測試產品" }
+				],
+				'Personality (性格)': [
+					{ en: "active", zh: "好動的 / 活躍的" },
+					{ en: "confident", zh: "自信的" },
+					{ en: "diligent", zh: "勤奮的" },
+					{ en: "generous", zh: "慷慨的 / 大方的" },
+					{ en: "loyal", zh: "忠誠的" },
+					{ en: "modest", zh: "謙虛的" },
+					{ en: "patient", zh: "有耐性的" },
+					{ en: "responsible", zh: "負責任的" }
+				],
+				'Experiences (經歷與感受)': [
+					{ en: "joyful", zh: "快樂的" },
+					{ en: "wonderful", zh: "精彩的" },
+					{ en: "meaningful", zh: "有意義的" },
+					{ en: "valuable", zh: "寶貴的" },
+					{ en: "painful", zh: "痛苦的" },
+					{ en: "awful", zh: "糟糕的" },
+					{ en: "ashamed of", zh: "對...感到羞恥" },
+					{ en: "proud of", zh: "為...感到自豪" },
+					{ en: "scared of", zh: "害怕..." },
+					{ en: "angry with", zh: "生...的氣" },
+					{ en: "excited about", zh: "對...感到興奮" }
+				],
+				'What I learnt (學習成長)': [
+					{ en: "care for others", zh: "關心別人" },
+					{ en: "enjoy teamwork", zh: "享受團隊合作" },
+					{ en: "know right from wrong", zh: "明辨是非" },
+					{ en: "make my own choices", zh: "自己做決定" },
+					{ en: "respect others", zh: "尊重他人" },
+					{ en: "solve problems", zh: "解決問題" },
+					{ en: "improve my skills", zh: "改善我的技巧" }
+				]
+			}
+		};
+
+        const sfx = { click: new Audio('./assets/sounds/click.wav'), success: new Audio('./assets/sounds/success.wav'), skill: new Audio('./assets/sounds/skill.wav'), hit: new Audio('./assets/sounds/hit.wav'), hurt: new Audio('./assets/sounds/hurt.wav'), victory: new Audio('./assets/sounds/victory.wav'), failed: new Audio('./assets/sounds/failed.wav'), entermission: new Audio('./assets/sounds/entermission.wav') };
+        const bgm = { start: new Audio('./assets/sounds/bgm_start.ogg'), battle: new Audio('./assets/sounds/bgm_battle.ogg'), final: new Audio('./assets/sounds/bgm_final.mp3') };
+        bgm.start.loop = true; bgm.battle.loop = true; bgm.final.loop = true;
+        
+        bgm.start.volume = 0.7;
+
+        const shuffleArray = (array) => {
+            let arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        };
+
+        function SpellingRPG() {
+            const [gameState, setGameState] = useState('START'); 
+            // 裝備重置：inventory 初始為空陣列 []，代表全部未解鎖
+            const [player, setPlayer] = useState({ unlockedLevels: ['home'], inventory: [], equippedItem: null, grade: 'P.3', selectedTopics: [], storyDesc: '轉生小學生的冒險。', unlockedStories: [], hasNewStory: false });
+            const [levelInfo, setLevelInfo] = useState({ id: 'home', difficulty: 'normal' });
+            const [selectedItemInfo, setSelectedItemInfo] = useState(null); 
+            const [result, setResult] = useState({ win: false, time: 0 });
+            const [isMuted, setIsMuted] = useState(false);
+            const [homeConfirm, setHomeConfirm] = useState(false);
+            const [lockInput, setLockInput] = useState(false);
+            const [viewingStory, setViewingStory] = useState(null);
+
+            const [battle, setBattle] = useState({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: null, enemyHp: 100, enemyMaxHp: 100, enemyCd: 2, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false });
+            
+            const [calcState, setCalcState] = useState({ step: 0, base: 0, comboPct: 0, topicPct: 0, skillPct: 0, total: 0, triggerBase: 0, triggerCombo: 0, triggerSkill: 0 });
+            const [processingTurn, setProcessingTurn] = useState(false); 
+
+            const [inputState, setInputState] = useState({ queue: [], currentIndex: 0, currentInput: '', started: false });
+            const [timer, setTimer] = useState({ val: 30, max: 30, active: false });
+            const [startTime, setStartTime] = useState(0);
+
+            // 儲存功能：Key 已更改為 'spelling_rpg_wix_final' 以確保從頭開始
+            useEffect(() => { const saved = localStorage.getItem('spelling_rpg_wix_final'); if (saved) setPlayer(p => ({ ...p, ...JSON.parse(saved) })); }, []);
+            useEffect(() => { localStorage.setItem('spelling_rpg_wix_final', JSON.stringify({ unlockedLevels: player.unlockedLevels, inventory: player.inventory, grade: player.grade, equippedItem: player.equippedItem, unlockedStories: player.unlockedStories, hasNewStory: player.hasNewStory })); }, [player]);
+
+            useEffect(() => {
+                if (isMuted) { Object.values(bgm).forEach(b => b.pause()); }
+                else {
+                    if (gameState === 'START' || gameState === 'HOME' || gameState === 'MAP' || gameState === 'SYLLABUS' || gameState === 'RESULT') {
+                        bgm.battle.pause(); bgm.final.pause(); bgm.start.play().catch(()=>{});
+                    } else if (gameState === 'BATTLE') {
+                        bgm.start.pause();
+                        if (levelInfo.id === 'final') bgm.final.play().catch(()=>{});
+                        else bgm.battle.play().catch(()=>{});
+                    }
+                }
+            }, [isMuted, gameState, levelInfo.id]);
+
+            useEffect(() => {
+                let interval = null;
+                if (gameState === 'BATTLE' && timer.active && timer.val > 0) {
+                    interval = setInterval(() => {
+                        setTimer(curr => ({ ...curr, val: Math.max(0, curr.val - 1) }));
+                    }, 1000);
+                } else if (gameState === 'BATTLE' && timer.active && timer.val === 0) {
+                    endInputPhase();
+                }
+                return () => clearInterval(interval);
+            }, [gameState, timer.active, timer.val]);
+
+            useEffect(() => {
+                if (gameState === 'BATTLE' && battle.playerHp <= 0) {
+                    playSfx('failed');
+                    setResult({ win: false, time: Math.floor((Date.now() - startTime) / 1000) });
+                    setGameState('RESULT');
+                }
+            }, [battle.playerHp, gameState]);
+
+            useEffect(() => {
+                if (gameState === 'BATTLE' && battle.phase === 'CALCULATION') {
+                    const steps = [
+                        () => setCalcState(s => ({ ...s, step: 1 })),
+                        () => setCalcState(s => ({ ...s, step: 2 })),
+                        () => setCalcState(s => ({ ...s, step: 3 })),
+                        () => setCalcState(s => ({ ...s, step: 4 })),
+                        () => setCalcState(s => ({ ...s, step: 5 })),
+                        () => applyDamageAndNextTurn()
+                    ];
+                    steps.forEach((fn, idx) => { setTimeout(fn, idx * 500); });
+                }
+            }, [battle.phase]);
+
+            const playSfx = (n) => { if (!isMuted && sfx[n]) { sfx[n].currentTime = 0; sfx[n].play().catch(() => {}); } };
+            const stopAllBgm = () => { Object.values(bgm).forEach(b => b.pause()); };
+            
+            const speak = (t, r = 1.0) => { 
+                if (isMuted) return; 
+                const synth = window.speechSynthesis; 
+                const utter = new SpeechSynthesisUtterance(t); 
+                utter.lang = 'en-US'; 
+                utter.rate = r; 
+                utter.volume = 1.0;
+                synth.speak(utter); 
+            };
+
+            const initBattle = () => {
+                const lvl = LEVELS.find(l => l.id === levelInfo.id);
+                if (player.selectedTopics.length < lvl.minTopics) { alert(`至少需要選擇 ${lvl.minTopics} 個課題！`); return; }
+                stopAllBgm(); playSfx('entermission');
+                
+                setTimeout(() => {
+                    const hpMult = levelInfo.difficulty === 'hard' ? 2.0 : 1.0;
+                    
+                    let startCd = 2;
+                    if (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') {
+                        startCd = 1;
+                    }
+
+                    let q = []; player.selectedTopics.forEach(t => { if(WORDS_DB[player.grade][t]) q = q.concat(WORDS_DB[player.grade][t]); });
+                    if(q.length === 0) { alert("無單字資料"); return; }
+                    q = shuffleArray(q);
+                    
+                    const mob = lvl.waves[0];
+                    setBattle({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: mob, enemyHp: mob.hp * hpMult, enemyMaxHp: mob.hp * hpMult, enemyCd: startCd, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: "戰鬥開始！", skillActive: false, bossPhase: 0, isSilenced: false });
+                    setInputState({ queue: q, currentIndex: 0, currentInput: '', started: false });
+                    setTimer({ val: 30, max: 30, active: false }); setStartTime(Date.now()); setGameState('BATTLE');
+                    setProcessingTurn(false);
+                    
+                    const topicBonusPct = player.selectedTopics.length > lvl.minTopics ? (player.selectedTopics.length - lvl.minTopics) * 7 : 0;
+                    setCalcState({ step: 0, base: 0, comboPct: 0, topicPct: topicBonusPct, skillPct: 0, total: 0, triggerBase: 0, triggerCombo: 0, triggerSkill: 0 });
+
+                    setTimeout(() => setBattle(b => ({ ...b, messagePopup: null })), 1500);
+                }, 2000);
+            };
+
+            const handleKeyPress = useCallback((key) => {
+                if (lockInput) return;
+                if (timer.val <= 0 && battle.phase === 'INPUT') return;
+
+                const char = key.toLowerCase(); if (!/[a-z]/.test(char)) return;
+                
+                setBattle(cur => {
+                    if (cur.phase === 'TACTICAL' && cur.selectedMode) { setTimeout(() => startInputPhase(), 0); return cur; }
+                    if (cur.phase !== 'INPUT') return cur;
+                    
+                    setInputState(s => {
+                        const target = s.queue[s.currentIndex].en; let temp = s.currentInput; let nextIdx = temp.length;
+                        const skip = (idx) => { let i = idx; while (i < target.length && /[^a-zA-Z]/.test(target[i])) { temp += target[i]; i++; } return i; };
+                        nextIdx = skip(nextIdx);
+                        if (nextIdx < target.length && target[nextIdx].toLowerCase() === char) {
+                            playSfx('click'); temp += target[nextIdx]; nextIdx = skip(nextIdx + 1);
+                            setBattle(b => ({ ...b, playerMp: Math.min(b.playerMaxMp, b.playerMp + 1) }));
+                            setCalcState(prev => ({ ...prev, base: prev.base + 1, triggerBase: prev.triggerBase + 1 }));
+
+                            if (!s.started) s.started = true;
+                            
+                            if (temp.length >= target.length) {
+                                playSfx('success');
+                                const finishWord = () => {
+                                    let wordScore = 0;
+                                    const letters = target.replace(/[^a-zA-Z]/g,'');
+                                    for(let l of letters) {
+                                        let bonus = 0;
+                                        if (player.equippedItem === 'holy_staff' && 'aeiouAEIOU'.includes(l)) bonus = 5; 
+                                        wordScore += (10 + bonus);
+                                    }
+                                    wordScore += 10; 
+                                    
+                                    const newCombo = battle.combo + 1;
+                                    const comboBonusPct = newCombo > 1 ? (newCombo - 1) * (battle.selectedMode === 'A' ? 10 : 5) : 0;
+                                    setCalcState(prev => ({ ...prev, base: prev.base + wordScore, comboPct: comboBonusPct, triggerCombo: prev.triggerCombo + 1, triggerBase: prev.triggerBase + 1 }));
+
+                                    setBattle(b => ({ ...b, rawScore: b.rawScore + wordScore, combo: newCombo }));
+                                    setInputState(ns => {
+                                        let nextIndex = ns.currentIndex + 1;
+                                        let nextQueue = ns.queue;
+                                        if (nextIndex >= ns.queue.length) {
+                                            nextQueue = shuffleArray(ns.queue);
+                                            nextIndex = 0;
+                                        }
+                                        return { ...ns, queue: nextQueue, currentInput: '', currentIndex: nextIndex, started: false };
+                                    });
+                                    setLockInput(false);
+                                };
+                                
+                                if (cur.selectedMode === 'B') {
+                                    setLockInput(true);
+                                    setTimeout(() => { speak(target, 0.9); }, 0);
+                                    setTimeout(() => { finishWord(); }, 800);
+                                } else {
+                                    speak(target, 1.1); finishWord(); 
+                                }
+                            }
+                            return { ...s, currentInput: temp };
+                        }
+                        return s;
+                    });
+                    return cur;
+                });
+            }, [player, lockInput, timer.val, battle.phase, battle.combo, battle.selectedMode]);
+
+            useEffect(() => { const fn = (e) => handleKeyPress(e.key); window.addEventListener('keydown', fn); return () => window.removeEventListener('keydown', fn); }, [handleKeyPress]);
+
+            const startInputPhase = () => { 
+                let time = 30; 
+                if (player.equippedItem === 'thunder_boots') time += 8; 
+                
+                if (levelInfo.difficulty === 'hard' && levelInfo.id === 'waterfall') {
+                    time = 25;
+                }
+
+                let silenced = false;
+                if (levelInfo.difficulty === 'hard' && levelInfo.id === 'final') {
+                    if (Math.random() < 0.5) {
+                        silenced = true;
+                        setBattle(b => ({...b, messagePopup: "虛空封鎖！技能失效！"}));
+                        setTimeout(() => setBattle(b => ({...b, messagePopup: null})), 1500);
+                    }
+                }
+
+                setTimer({ val: time, max: time, active: true }); 
+                setBattle(b => ({ ...b, phase: 'INPUT', rawScore: 0, combo: 0, isSilenced: silenced })); 
+                
+                const lvl = LEVELS.find(l => l.id === levelInfo.id);
+                const topicBonusPct = player.selectedTopics.length > lvl.minTopics ? (player.selectedTopics.length - lvl.minTopics) * 7 : 0;
+                setCalcState({ step: 0, base: 0, comboPct: 0, topicPct: topicBonusPct, skillPct: 0, total: 0, triggerBase: 0, triggerCombo: 0, triggerSkill: 0 });
+                
+                setProcessingTurn(false);
+            };
+
+            const endInputPhase = () => {
+                if (processingTurn) return; 
+                setProcessingTurn(true);
+                setTimer(t => ({ ...t, active: false, val: 0 }));
+                setLockInput(true); 
+                setInputState(prev => ({ ...prev, currentInput: '', started: false }));
+
+                const totalMult = 1 + (calcState.comboPct/100) + (calcState.topicPct/100) + (calcState.skillPct/100);
+                const finalDmg = Math.floor(calcState.base * totalMult);
+
+                setCalcState(prev => ({ ...prev, total: finalDmg }));
+                setBattle(b => ({ ...b, phase: 'CALCULATION' }));
+            };
+
+            const applyDamageAndNextTurn = () => {
+                setLockInput(false);
+                setBattle(prev => {
+                    const dmg = calcState.total;
+                    playSfx('hit');
+                    
+                    setTimeout(() => {
+                        setBattle(b => {
+                            if (b.enemyHp <= 0) {
+                                const lvlData = LEVELS.find(l => l.id === levelInfo.id);
+                                if (b.waveIndex < lvlData.waves.length - 1) {
+                                    const nextMob = lvlData.waves[b.waveIndex + 1];
+                                    const hMult = levelInfo.difficulty === 'hard' ? 2.0 : 1.0;
+                                    
+                                    let nextStartCd = 2;
+                                    if (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') nextStartCd = 1;
+
+                                    setTimeout(() => setBattle(bb => ({ ...bb, messagePopup: null })), 1500);
+                                    setInputState(s => ({...s, started: false}));
+                                    return { ...b, waveIndex: b.waveIndex + 1, currentEnemy: nextMob, enemyHp: nextMob.hp * hMult, enemyMaxHp: nextMob.hp * hMult, enemyCd: nextStartCd, enemyMaxCd: 2, phase: 'TACTICAL', selectedMode: null, messagePopup: "下一波！", damagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false };
+                                } else { 
+                                    playSfx('victory'); 
+                                    if (lvlData.drop && !player.inventory.includes(lvlData.drop)) {
+                                        let dropRate = (lvlData.id === 'home') ? 1.0 : (levelInfo.difficulty === 'hard' ? 0.30 : 0.15);
+                                        if (Math.random() < dropRate || lvlData.id === 'home') {
+                                            setPlayer(p => ({...p, inventory: [...p.inventory, lvlData.drop]}));
+                                            alert(`獲得裝備：${ITEMS.find(i=>i.id===lvlData.drop).name}！`);
+                                        }
+                                    }
+                                    const nextLvlIdx = LEVELS.findIndex(l => l.id === lvlData.id) + 1;
+                                    if (nextLvlIdx < LEVELS.length) {
+                                        const nextId = LEVELS[nextLvlIdx].id;
+                                        if (!player.unlockedLevels.includes(nextId)) {
+                                            setPlayer(p => ({...p, unlockedLevels: [...p.unlockedLevels, nextId]}));
+                                        }
+                                    }
+                                    if (!player.unlockedStories.includes(lvlData.id)) {
+                                        setPlayer(p => ({ ...p, unlockedStories: [...p.unlockedStories, lvlData.id], hasNewStory: true }));
+                                    }
+
+                                    setResult({ win: true, time: Math.floor((Date.now() - startTime) / 1000) }); 
+                                    setGameState('RESULT'); 
+                                    return b; 
+                                }
+                            }
+                            
+                            let next = { ...b, damagePopup: null, skillActive: false }; 
+                            
+                            if (levelInfo.difficulty === 'hard' && levelInfo.id === 'dragon') {
+                                next.playerHp = Math.max(0, next.playerHp - 50);
+                                next.playerDamagePopup = (next.playerDamagePopup || 0) + 50;
+                                next.messagePopup = "灼熱傷害！";
+                                setTimeout(() => setBattle(bb => ({ ...bb, messagePopup: null })), 1000);
+                            }
+
+                            if (next.enemyCd <= 1) {
+                                let rawDmg = next.currentEnemy.dmg || 100;
+                                if (levelInfo.difficulty === 'hard') rawDmg = Math.floor(rawDmg * 1.25);
+                                
+                                if (next.currentEnemy.isBoss) {
+                                    if (next.bossPhase % 2 !== 0) {
+                                        rawDmg = Math.floor(rawDmg * 1.5); 
+                                        next.messagePopup = "BOSS 技能爆發！";
+                                        setTimeout(() => setBattle(bb => ({ ...bb, messagePopup: null })), 1000);
+                                    }
+                                    next.bossPhase += 1;
+                                    next.enemyCd = 1; 
+                                } else {
+                                    next.enemyCd = (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') ? 1 : 2;
+                                }
+
+                                playSfx('hurt');
+                                if (next.shield > 0) { const abs = Math.min(next.shield, rawDmg); next.shield -= abs; rawDmg -= abs; }
+                                next.playerHp = Math.max(0, next.playerHp - rawDmg); 
+                                next.playerDamagePopup = rawDmg;
+                            } else { 
+                                next.enemyCd -= 1; 
+                            }
+                            setTimeout(() => setBattle(bb => ({...bb, playerDamagePopup: null})), 1000);
+                            
+                            setInputState(s => ({...s, started: false}));
+                            return { ...next, phase: 'TACTICAL', selectedMode: null };
+                        });
+                    }, 1000);
+
+                    return { ...prev, enemyHp: Math.max(0, prev.enemyHp - dmg), damagePopup: dmg > 0 ? dmg : null };
+                });
+            };
+
+            const handleSkill = () => {
+                if (battle.isSilenced) {
+                    setBattle(b => ({...b, messagePopup: "沉默中，無法使用技能！"}));
+                    setTimeout(() => setBattle(b => ({...b, messagePopup: null})), 1000);
+                    return;
+                }
+
+                if (!player.equippedItem) return;
+                const item = ITEMS.find(i => i.id === player.equippedItem);
+                if (item.type === 'passive') return; 
+                if (battle.playerMp < item.mpCost) return;
+                
+                if (!battle.skillConfirming) { setBattle({ ...battle, skillConfirming: true }); }
+                else {
+                    playSfx('skill');
+                    
+                    const isChurchHard = levelInfo.difficulty === 'hard' && levelInfo.id === 'church';
+
+                    if (item.id === 'village_shield') {
+                        if (isChurchHard) {
+                            setBattle(b => ({ ...b, messagePopup: "聖光使護盾無效！", playerMp: b.playerMp - 100, skillConfirming: false }));
+                            setTimeout(() => setBattle(b => ({...b, messagePopup: null})), 1000);
+                        } else {
+                            setBattle(b => ({ ...b, shield: b.shield + 40, playerMp: b.playerMp - 100, skillConfirming: false }));
+                        }
+                    }
+                    if (item.id === 'water_amulet') {
+                        let heal = 250;
+                        if (isChurchHard) heal = 125;
+                        setBattle(b => ({ ...b, playerHp: Math.min(b.playerMaxHp, b.playerHp + heal), playerMp: b.playerMp - 100, skillConfirming: false, healPopup: heal }));
+                    }
+                    if (item.id === 'ice_amulet') setBattle(b => ({ ...b, enemyCd: b.enemyCd + 3, playerMp: b.playerMp - 100, skillConfirming: false }));
+                    if (item.id === 'fire_staff') {
+                        setBattle(b => ({ ...b, skillConfirming: false, skillActive: true, playerMp: b.playerMp - 150 }));
+                        setCalcState(prev => ({ ...prev, skillPct: 80, triggerSkill: prev.triggerSkill + 1 }));
+                    }
+                    if (item.id === 'pandora_ring') { 
+                        const target = inputState.queue[inputState.currentIndex].en;
+                        const wordScore = target.replace(/[^a-zA-Z]/g,'').length * 10 + 10;
+                        setBattle(b => ({ ...b, rawScore: b.rawScore + wordScore, combo: b.combo + 1, playerMp: b.playerMp - 200, skillConfirming: false }));
+                        const newCombo = battle.combo + 1;
+                        const comboBonusPct = newCombo > 1 ? (newCombo - 1) * (battle.selectedMode === 'A' ? 10 : 5) : 0;
+                        setCalcState(prev => ({ ...prev, base: prev.base + wordScore, comboPct: comboBonusPct, triggerBase: prev.triggerBase + 1, triggerCombo: prev.triggerCombo + 1 }));
+                        
+                        setInputState(s => ({ ...s, currentInput: '', currentIndex: (s.currentIndex + 1) % s.queue.length }));
+                    }
+                    setTimeout(() => setBattle(bb => ({...bb, healPopup: null})), 1000);
+                }
+            };
+
+            const renderInputHint = () => {
+                const target = inputState.queue[inputState.currentIndex].en;
+                const blurClass = (levelInfo.difficulty === 'hard' && levelInfo.id === 'glacier') ? 'blizzard-blur' : '';
+
+                if (!inputState.started && (battle.selectedMode === 'A' || battle.selectedMode === 'B')) {
+                    return (
+                        <div className={`text-4xl font-mono tracking-widest font-bold text-center ${blurClass}`}>
+                            {target.split('').map((c, i) => {
+                                if (/[^a-zA-Z]/.test(c)) return <span key={i} className="text-slate-500">{c}</span>;
+                                return <span key={i} className="text-slate-700">{i === 0 ? c : '_'}</span>;
+                            })}
+                        </div>
+                    );
+                }
+                return (
+                    <div className={`text-4xl font-mono tracking-widest font-bold text-center ${blurClass}`}>
+                        {target.split('').map((c, i) => {
+                            const isTyped = i < inputState.currentInput.length;
+                            const isSymbol = /[^a-zA-Z]/.test(c);
+                            let displayChar = c; 
+                            let color = isTyped ? 'text-white' : 'text-slate-700';
+                            if (!isTyped && !isSymbol) {
+                                if (battle.selectedMode === 'A') displayChar = i === 0 ? c : '_';
+                                if (battle.selectedMode === 'B') displayChar = c; 
+                            }
+                            return <span key={i} className={color}>{displayChar}</span>;
+                        })}
+                    </div>
+                );
+            };
+
+            // 漫畫顯示組件更新
+            const StoryViewer = () => {
+                if (!viewingStory) return null;
+                const story = STORIES[viewingStory];
+                return (
+                    <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4">
+                        <div className="w-full max-w-md bg-slate-900 border-2 border-yellow-600 rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
+                            <div className="p-4 bg-slate-800 flex justify-between items-center border-b border-slate-700">
+                                <h3 className="text-xl font-bold text-yellow-500">{story.title}</h3>
+                                <button onClick={() => setViewingStory(null)} className="text-slate-400 hover:text-white"><Icons.X /></button>
+                            </div>
+                            <div className="overflow-y-auto p-6 space-y-6 text-center">
+                                {/* 顯示漫畫圖片 */}
+                                <div className="w-full bg-slate-800 flex items-center justify-center border border-slate-700 rounded overflow-hidden">
+                                    <img src={story.image} alt={story.title} className="w-full h-auto object-cover" />
+                                </div>
+                                <p className="text-slate-200 whitespace-pre-line leading-loose font-serif text-lg">{story.content}</p>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="game-container">
+                    <div className="game-frame">
+                        <StoryViewer />
+                        
+                        <div className="absolute top-4 right-4 z-50 flex gap-2">
+                            <button onClick={() => setIsMuted(!isMuted)} className="p-2 bg-black/40 rounded-full text-white border border-white/20">{isMuted ? '🔇' : <Icons.Music size={18}/>}</button>
+                            <button onClick={() => { if(gameState==='BATTLE') setHomeConfirm(true); else { stopAllBgm(); setGameState('START'); } }} className="p-2 bg-black/40 rounded-full text-white border border-white/20"><Icons.HomeIcon size={18}/></button>
+                        </div>
+
+                        <AnimatePresence>
+                            {homeConfirm && (
+                                <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md">
+                                    <div className="rpg-panel p-8 rounded-xl text-center border-2 border-yellow-600">
+                                        <h3 className="text-xl text-yellow-500 font-bold mb-6">放棄戰鬥？</h3>
+                                        <div className="flex gap-4"><button onClick={()=>{setHomeConfirm(false); stopAllBgm(); setGameState('START');}} className="flex-1 py-3 bg-red-900 text-white rounded-lg font-bold">是</button><button onClick={()=>setHomeConfirm(false)} className="flex-1 py-3 bg-slate-700 text-white rounded-lg font-bold">否</button></div>
+                                    </div>
+                                </div>
+                            )}
+                        </AnimatePresence>
+
+                        {gameState === 'START' && (
+                            <div className="h-full relative flex flex-col items-center justify-center p-8 text-center overflow-hidden">
+                                <motion.div className="absolute -inset-1 bg-cover bg-center scale-105" style={{backgroundImage: `url(${ASSETS.bg_start})`, backgroundColor: '#1e293b' }} />
+                                <div className="absolute inset-0 bg-black/40"></div>
+                                <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10">
+                                    <h1 className="text-5xl font-black text-yellow-500 mb-2 font-rpg tracking-widest">SPELLING</h1>
+                                    <h1 className="text-6xl font-black text-white mb-8 font-rpg tracking-tighter">RPG</h1>
+                                    <p className="text-slate-300 mb-12 italic">「專屬於學習的異世界轉生」</p>
+                                    <button onClick={() => { setGameState('HOME'); }} className="rpg-button px-12 py-4 rounded-full font-bold text-xl">開始冒險</button>
+                                </motion.div>
+                            </div>
+                        )}
+
+                        {gameState === 'HOME' && (
+                            <div className="h-full bg-slate-900 text-slate-100 p-6 overflow-y-auto pt-16">
+                                <h2 className="text-2xl font-bold text-yellow-500 font-rpg mb-6">冒險者整備</h2>
+                                
+                                <div className="flex gap-2 mb-6">
+                                    <button onClick={() => setGameState('MAP')} className="flex-1 py-4 rpg-button rounded-xl font-bold text-lg flex items-center justify-center gap-2"><Icons.MapIcon /> 前往地圖</button>
+                                    <button onClick={() => {
+                                        if (player.unlockedStories.length === 0) { alert("尚未解鎖任何故事！通關關卡來解鎖。"); return; }
+                                        const latest = player.unlockedStories[player.unlockedStories.length-1];
+                                        setViewingStory(latest);
+                                        setPlayer(p => ({ ...p, hasNewStory: false }));
+                                    }} className="relative flex-1 py-4 bg-slate-700 border-2 border-slate-500 rounded-xl font-bold text-lg flex items-center justify-center gap-2 text-slate-300">
+                                        <Icons.Book /> 被遺忘的故事
+                                        {player.hasNewStory && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full new-badge">NEW</span>}
+                                    </button>
+                                </div>
+
+                                <div className="mb-6 p-4 rpg-panel rounded-lg border border-slate-700 min-h-[160px]">
+                                    {selectedItemInfo ? (
+                                        <div>
+                                            <div className="text-yellow-500 font-bold text-lg mb-1">{selectedItemInfo.name}</div>
+                                            <div className="text-xs text-slate-300 mb-2 leading-relaxed">{selectedItemInfo.lore}</div>
+                                            <div className="text-xs text-sky-400 font-bold mb-1">取得：{selectedItemInfo.obtain}</div>
+                                            <div className="text-xs text-emerald-400 font-bold">{selectedItemInfo.usage}</div>
+                                        </div>
+                                    ) : ( <div className="text-sm text-slate-400 italic">{player.storyDesc}</div> )}
+                                </div>
+                                <div className="mb-8"><h3 className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-widest">裝備欄位</h3>
+                                    <div className="grid grid-cols-4 gap-3">
+                                        {ITEMS.map(item => { 
+                                            const isOwned = player.inventory.includes(item.id); 
+                                            const isEquipped = player.equippedItem === item.id; 
+                                            return (
+                                                <button key={item.id} onClick={() => { setSelectedItemInfo(item); if(isOwned) setPlayer({...player, equippedItem: isEquipped ? null : item.id}); }} className={`aspect-square rounded-lg border-2 flex items-center justify-center p-2 relative overflow-hidden ${isOwned ? (isEquipped ? 'border-yellow-400 bg-yellow-900/40' : 'border-yellow-600 bg-slate-800') : 'border-slate-800 bg-slate-900'}`}>
+                                                    <img src={item.img} className={`w-full h-full object-contain ${!isOwned ? 'locked-silhouette' : ''}`} />
+                                                    {!isOwned && <div className="absolute inset-0 flex items-center justify-center"><Icons.Lock size={12} className="text-slate-500"/></div>}
+                                                </button>
+                                            ); 
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState === 'MAP' && (
+                            <div className="h-full p-6 flex flex-col pt-16" style={{ backgroundImage: `url(${ASSETS.bg_map})`, backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                <div className="absolute inset-0 bg-black/60"></div>
+                                <div className="relative z-10 h-full flex flex-col">
+                                    <h2 className="text-2xl font-bold text-yellow-500 font-rpg mb-8">世界地圖</h2>
+                                    <div className="flex-1 space-y-4 overflow-y-auto">
+                                        {LEVELS.map(lvl => {
+                                            const isUnlocked = player.unlockedLevels.includes(lvl.id); const isSelected = levelInfo.id === lvl.id;
+                                            return (
+                                                <div key={lvl.id} onClick={() => isUnlocked && setLevelInfo({...levelInfo, id: lvl.id})} className={`p-4 rounded-xl border-2 transition-all relative overflow-hidden ${isUnlocked ? (isSelected ? 'border-yellow-500' : 'border-slate-500') : 'border-slate-800'}`} style={{ backgroundImage: `url(${lvl.bg})`, backgroundColor: '#0f172a', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+                                                    <div className="absolute inset-0 bg-black/50"></div>
+                                                    {!isUnlocked && (
+                                                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-20">
+                                                            <Icons.Lock size={32} className="text-slate-400 mb-2"/>
+                                                            <span className="text-xs text-slate-300 font-bold bg-black/50 px-2 py-1 rounded">需通關前置關卡</span>
+                                                        </div>
+                                                    )}
+                                                    <div className="relative z-10">
+                                                        <div className="flex justify-between items-center"><h3 className="font-bold text-lg text-yellow-400 drop-shadow-md">{lvl.name}</h3></div>
+                                                        <p className="text-xs text-slate-300">{lvl.desc}</p>
+                                                        {isSelected && isUnlocked && (
+                                                            <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} className="mt-4 pt-4 border-t border-slate-700">
+                                                                <div className="flex gap-2 mb-4">
+                                                                    <button onClick={(e)=>{e.stopPropagation(); setLevelInfo({...levelInfo, difficulty:'normal'})}} className={`flex-1 py-2 rounded text-xs ${levelInfo.difficulty==='normal'?'bg-emerald-600':'bg-slate-700'}`}>普通</button>
+                                                                    {lvl.id !== 'home' && <button onClick={(e)=>{e.stopPropagation(); setLevelInfo({...levelInfo, difficulty:'hard'})}} className={`flex-1 py-2 rounded text-xs ${levelInfo.difficulty==='hard'?'bg-red-700':'bg-slate-700'}`}>困難</button>}
+                                                                </div>
+                                                                <button onClick={()=>setGameState('SYLLABUS')} className="w-full py-3 rpg-button rounded font-bold">選擇課題</button>
+                                                            </motion.div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState === 'SYLLABUS' && (
+                            <div className="h-full bg-slate-900 p-6 flex flex-col pt-16">
+                                <h2 className="text-2xl font-bold text-yellow-500 mb-4 font-rpg text-center">選擇課題</h2>
+                                <div className="flex gap-2 mb-6">{['P.3', 'P.4', 'P.5', 'P.6'].map(g => (<button key={g} onClick={() => setPlayer({...player, grade: g, selectedTopics: []})} className={`flex-1 py-2 rounded font-bold border ${player.grade === g ? 'bg-yellow-600 border-yellow-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>{g}</button>))}</div>
+                                <div className="text-center mb-4">
+                                    <p className="text-xs text-slate-400 italic">至少選擇 {LEVELS.find(l=>l.id===levelInfo.id).minTopics} 個課題。</p>
+                                    {player.selectedTopics.length > LEVELS.find(l=>l.id===levelInfo.id).minTopics && (
+                                        <p className="text-sm text-emerald-400 font-bold">傷害加成: +{(player.selectedTopics.length - LEVELS.find(l=>l.id===levelInfo.id).minTopics)*7}%</p>
+                                    )}
+                                </div>
+                                <div className="flex-1 overflow-y-auto space-y-2">
+                                    {Object.keys(WORDS_DB[player.grade] || {}).map(t => {
+                                        const isSelected = player.selectedTopics.includes(t);
+                                        return (<button key={t} onClick={() => setPlayer({...player, selectedTopics: isSelected ? player.selectedTopics.filter(x=>x!==t) : [...player.selectedTopics, t]})} className={`w-full py-4 px-4 rounded border text-left font-bold text-sm flex justify-between items-center ${isSelected ? 'bg-sky-700 border-sky-400' : 'bg-slate-800 border-slate-700 text-slate-500'}`}>{t}{isSelected && <span>✅</span>}</button>)
+                                    })}
+                                </div>
+                                <button onClick={initBattle} className="mt-6 w-full py-4 rpg-button rounded-xl font-bold">開始戰鬥</button>
+                            </div>
+                        )}
+
+                        {gameState === 'BATTLE' && (
+                            <div className="h-full flex flex-col bg-black relative">
+                                <AnimatePresence>{battle.messagePopup && (<motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 1.5, opacity: 0 }} className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"><h2 className="text-4xl font-black text-red-500 drop-shadow-lg text-center px-4 font-rpg">{battle.messagePopup}</h2></motion.div>)}</AnimatePresence>
+                                
+                                <div className="flex-1 relative overflow-hidden min-h-[30%]">
+                                    <motion.div className="absolute -inset-1 bg-cover bg-center opacity-40 scale-105" style={{backgroundImage: `url(${LEVELS.find(l=>l.id===levelInfo.id).bg})`, backgroundColor: '#334155'}} />
+                                    
+                                    <div className="absolute top-2 left-2 z-30 flex flex-col gap-0.5 pointer-events-none origin-top-left scale-90">
+                                        <div className={`text-white font-bold text-sm dmg-text ${calcState.step >= 1 ? 'text-white scale-105' : 'text-slate-300'}`}>
+                                            輸入傷害：<span key={calcState.triggerBase} className="dmg-pop">{calcState.base}</span>
+                                        </div>
+                                        <div className={`text-sm font-bold dmg-text ${calcState.step >= 2 ? 'text-yellow-400 scale-105' : 'text-slate-400'}`}>
+                                            COMBO：+<span key={calcState.triggerCombo} className="dmg-pop">{calcState.comboPct}</span>%
+                                        </div>
+                                        <div className={`text-sm font-bold dmg-text ${calcState.step >= 3 ? 'text-emerald-400 scale-105' : 'text-slate-400'}`}>
+                                            範圍加成：+{calcState.topicPct}%
+                                        </div>
+                                        <div className={`text-sm font-bold dmg-text ${calcState.step >= 4 ? 'text-purple-400 scale-105' : 'text-slate-400'}`}>
+                                            技能加成：+<span key={calcState.triggerSkill} className="dmg-pop">{calcState.skillPct}</span>%
+                                        </div>
+                                        {calcState.step >= 5 && (
+                                            <div className="text-red-500 font-black text-3xl mt-1 dmg-text total-dmg-pop" style={{ textShadow: '2px 2px 0px black' }}>
+                                                合共傷害：{calcState.total}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {levelInfo.difficulty === 'hard' && (
+                                        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-900/80 px-3 py-1 rounded border border-red-500 z-20">
+                                            <span className="text-xs text-red-200 font-bold">⚠ 場地效果：{LEVELS.find(l=>l.id===levelInfo.id).fieldEffect}</span>
+                                        </div>
+                                    )}
+
+                                    <div className="absolute top-12 right-6 flex flex-col items-end w-40 z-10">
+                                        <div className="text-white font-bold text-sm drop-shadow-md mb-1">{battle.currentEnemy.name}</div>
+                                        <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-700 text-xs text-red-400 font-bold mb-2">CD {battle.enemyCd}</div>
+                                        <div className="w-full h-2 bg-slate-800 rounded-full border border-slate-700 mb-4"><motion.div className="h-full bg-red-600" animate={{ width: `${(battle.enemyHp/battle.enemyMaxHp)*100}%` }} /></div>
+                                        <motion.div className="w-40 h-40 relative" animate={battle.phase==='ENEMY_TURN'?{x:[-5,5,-5,5,0]}:{y:[0,-5,0]}} transition={{duration:2, repeat:Infinity}}><img src={battle.currentEnemy.img} className="w-full h-full object-contain scale-125 origin-bottom" alt="Enemy" /><AnimatePresence>{battle.damagePopup && (<motion.div initial={{ y: 0, opacity: 1, scale: 0.5 }} animate={{ y: -80, opacity: 0, scale: 1.5 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-5xl font-black text-red-500 drop-shadow-lg z-30">-{battle.damagePopup}</motion.div>)}</AnimatePresence></motion.div>
+                                    </div>
+                                    <div className="absolute bottom-12 left-6 w-32 z-10">
+                                        <div className="w-24 h-24 relative mb-4"><img src={ASSETS.char_missionary} className="w-full h-full object-contain scale-125 origin-bottom" alt="Player" /><AnimatePresence>{battle.playerDamagePopup && (<motion.div initial={{ y: 0, opacity: 1, scale: 0.8 }} animate={{ y: -60, opacity: 0, scale: 1.2 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-4xl font-black text-purple-500 drop-shadow-lg z-30">-{battle.playerDamagePopup}</motion.div>)}</AnimatePresence><AnimatePresence>{battle.healPopup && (<motion.div initial={{ y: 0, opacity: 1 }} animate={{ y: -60, opacity: 0 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-4xl font-black text-emerald-400 drop-shadow-lg z-30">+{battle.healPopup}</motion.div>)}</AnimatePresence></div>
+                                        <div className="w-full h-2.5 bg-slate-800 rounded-full border border-slate-700 mb-1 relative overflow-hidden"><motion.div className="h-full bg-emerald-500" animate={{ width: `${(battle.playerHp/battle.playerMaxHp)*100}%` }} />{battle.shield > 0 && <div className="absolute top-0 right-0 h-full bg-sky-400/50" style={{width: `${(battle.shield/battle.playerMaxHp)*100}%`}}></div>}</div>
+                                        <div className="w-full h-1.5 bg-slate-800 rounded-full border border-slate-700"><motion.div className="h-full bg-blue-500" animate={{ width: `${(battle.playerMp/battle.playerMaxMp)*100}%` }} /></div>
+                                    </div>
+                                </div>
+
+                                <div className="h-12 bg-slate-900 border-y border-slate-800 flex items-center justify-center gap-2 px-4 overflow-hidden"><span className="text-yellow-500 font-bold text-lg">[{inputState.queue[inputState.currentIndex]?.zh}]</span><span className="text-slate-600 text-xs"> &lt; </span><span className="text-slate-500 text-xs">[{inputState.queue[(inputState.currentIndex+1)%inputState.queue.length]?.zh}]</span></div>
+                                <div className="h-2 bg-slate-950"><motion.div className={`h-full ${timer.val < 10 ? 'bg-red-600' : 'bg-emerald-500'}`} animate={{ width: `${(timer.val/timer.max)*100}%` }} transition={{ease:"linear", duration: 1}} /></div>
+                                
+                                <div className="h-80 bg-slate-900 flex flex-col flex-shrink-0">
+                                    <div className="flex justify-center gap-6 p-4">
+                                        <button disabled={inputState.started} onClick={()=>setBattle({...battle, selectedMode: 'A'})} className={`tactic-btn ${battle.selectedMode === 'A' ? 'active' : ''}`}><img src={ASSETS.btn_tactic_a} alt="Mode A" /></button>
+                                        <button disabled={inputState.started} onClick={()=>setBattle({...battle, selectedMode: 'B'})} className={`tactic-btn ${battle.selectedMode === 'B' ? 'active' : ''}`}><img src={ASSETS.btn_tactic_b} alt="Mode B" /></button>
+                                        <button disabled={inputState.started || battle.isSilenced || !player.equippedItem || ITEMS.find(i=>i.id===player.equippedItem).type === 'passive'} onClick={handleSkill} 
+                                            className={`tactic-btn ${player.equippedItem && ITEMS.find(i=>i.id===player.equippedItem).type === 'active' && battle.playerMp >= ITEMS.find(i=>i.id===player.equippedItem).mpCost ? 'skill-ready-glow' : 'opacity-40'} ${battle.skillConfirming ? 'ring-4 ring-purple-400' : ''} ${player.equippedItem && ITEMS.find(i=>i.id===player.equippedItem).type === 'passive' ? 'passive-active' : ''}`}>
+                                            {player.equippedItem ? <img src={ITEMS.find(i=>i.id===player.equippedItem).btnImg} /> : <Icons.Lock className="m-auto text-slate-500"/>}
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 flex items-center justify-center px-4">
+                                        {(battle.selectedMode || battle.phase === 'INPUT') && renderInputHint()}
+                                    </div>
+                                    <div className="kbd-container">
+                                        <div className="kbd-row">{'qwertyuiop'.split('').map(c => <button key={c} onMouseDown={(e)=>{e.preventDefault(); handleKeyPress(c)}} className="kbd-key">{c}</button>)}</div>
+                                        <div className="kbd-row"><div className="row-2-spacer"></div>{'asdfghjkl'.split('').map(c => <button key={c} onMouseDown={(e)=>{e.preventDefault(); handleKeyPress(c)}} className="kbd-key">{c}</button>)}<div className="row-2-spacer"></div></div>
+                                        <div className="kbd-row"><div className="row-3-spacer"></div>{'zxcvbnm'.split('').map(c => <button key={c} onMouseDown={(e)=>{e.preventDefault(); handleKeyPress(c)}} className="kbd-key">{c}</button>)}<div className="row-3-spacer" style={{width: '60px'}}></div></div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {gameState === 'RESULT' && (
+                            <div className="h-full bg-slate-950 flex flex-col items-center justify-center p-8 text-center">
+                                <div className="text-8xl mb-8">{result.win ? '🏆' : '💀'}</div>
+                                <h2 className="text-4xl font-black text-yellow-500 mb-4 font-rpg">{result.win ? 'VICTORY' : 'DEFEAT'}</h2>
+                                <p className="text-slate-400 mb-8">Time: {result.time}s</p>
+                                <button onClick={()=> { setGameState('MAP'); }} className="rpg-button px-12 py-4 rounded-xl font-bold">返回地圖</button>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<SpellingRPG />);
+    </script>
+</body>
+</html>
