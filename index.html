@@ -1,13 +1,21 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
+<!DOCTYPE html><html lang="zh-TW"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <!-- 
+        KEYBOARD FIX: Added 'interactive-widget=resizes-content' 
+        This ensures the game resizes when the mobile keyboard opens.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Spelling RPG - 聖言傳教士傳說</title>
     
+    <!-- SEO & Social Sharing -->
+    <meta name="description" content="Spelling RPG 是一款結合復古角色扮演的免費英文單字遊戲。透過聽音拼字發動攻擊，擊敗怪物並升級你的勇者！">
+    <meta property="og:title" content="Spelling RPG - 用英文單字來場大冒險！">
+    <meta property="og:description" content="覺得背單字很無聊嗎？來試試這款復古風網頁遊戲！⚔️ 扮演勇者，聽發音、拼單字、打怪升級。">
+    <meta property="og:type" content="website">
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin="" src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin="" src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://unpkg.com/framer-motion@10.16.16/dist/framer-motion.js"></script>
 
@@ -839,7 +847,10 @@
         const bgm = { start: new Audio('./assets/sounds/bgm_start.ogg'), battle: new Audio('./assets/sounds/bgm_battle.ogg'), final: new Audio('./assets/sounds/bgm_final.mp3') };
         bgm.start.loop = true; bgm.battle.loop = true; bgm.final.loop = true;
         
-        bgm.start.volume = 0.7;
+        // FIX: Set default volume lower (30%)
+        bgm.start.volume = 0.3;
+        bgm.battle.volume = 0.3;
+        bgm.final.volume = 0.3;
 
         const shuffleArray = (array) => {
             let arr = [...array];
@@ -852,12 +863,15 @@
 
         function SpellingRPG() {
             const [gameState, setGameState] = useState('START'); 
-            // 裝備重置：inventory 初始為空陣列 []，代表全部未解鎖
             const [player, setPlayer] = useState({ unlockedLevels: ['home'], inventory: [], equippedItem: null, grade: 'P.3', selectedTopics: [], storyDesc: '轉生小學生的冒險。', unlockedStories: [], hasNewStory: false });
             const [levelInfo, setLevelInfo] = useState({ id: 'home', difficulty: 'normal' });
             const [selectedItemInfo, setSelectedItemInfo] = useState(null); 
             const [result, setResult] = useState({ win: false, time: 0 });
-            const [isMuted, setIsMuted] = useState(false);
+            
+            // FIX: Separate mute states
+            const [bgmMuted, setBgmMuted] = useState(false);
+            const [sfxMuted, setSfxMuted] = useState(false);
+
             const [homeConfirm, setHomeConfirm] = useState(false);
             const [lockInput, setLockInput] = useState(false);
             const [viewingStory, setViewingStory] = useState(null);
@@ -871,22 +885,24 @@
             const [timer, setTimer] = useState({ val: 30, max: 30, active: false });
             const [startTime, setStartTime] = useState(0);
 
-            // 儲存功能：Key 已更改為 'spelling_rpg_wix_final' 以確保從頭開始
             useEffect(() => { const saved = localStorage.getItem('spelling_rpg_wix_final'); if (saved) setPlayer(p => ({ ...p, ...JSON.parse(saved) })); }, []);
             useEffect(() => { localStorage.setItem('spelling_rpg_wix_final', JSON.stringify({ unlockedLevels: player.unlockedLevels, inventory: player.inventory, grade: player.grade, equippedItem: player.equippedItem, unlockedStories: player.unlockedStories, hasNewStory: player.hasNewStory })); }, [player]);
 
+            // FIX: Updated BGM Logic to use bgmMuted
             useEffect(() => {
-                if (isMuted) { Object.values(bgm).forEach(b => b.pause()); }
-                else {
+                if (bgmMuted) { 
+                    Object.values(bgm).forEach(b => b.pause()); 
+                } else {
                     if (gameState === 'START' || gameState === 'HOME' || gameState === 'MAP' || gameState === 'SYLLABUS' || gameState === 'RESULT') {
-                        bgm.battle.pause(); bgm.final.pause(); bgm.start.play().catch(()=>{});
+                        bgm.battle.pause(); bgm.final.pause(); 
+                        bgm.start.play().catch(()=>{});
                     } else if (gameState === 'BATTLE') {
                         bgm.start.pause();
                         if (levelInfo.id === 'final') bgm.final.play().catch(()=>{});
                         else bgm.battle.play().catch(()=>{});
                     }
                 }
-            }, [isMuted, gameState, levelInfo.id]);
+            }, [bgmMuted, gameState, levelInfo.id]);
 
             useEffect(() => {
                 let interval = null;
@@ -922,11 +938,19 @@
                 }
             }, [battle.phase]);
 
-            const playSfx = (n) => { if (!isMuted && sfx[n]) { sfx[n].currentTime = 0; sfx[n].play().catch(() => {}); } };
+            // FIX: Updated SFX Logic to use sfxMuted
+            const playSfx = (n) => { 
+                if (!sfxMuted && sfx[n]) { 
+                    sfx[n].currentTime = 0; 
+                    sfx[n].volume = 1.0; // SFX stays loud
+                    sfx[n].play().catch(() => {}); 
+                } 
+            };
+            
             const stopAllBgm = () => { Object.values(bgm).forEach(b => b.pause()); };
             
             const speak = (t, r = 1.0) => { 
-                if (isMuted) return; 
+                if (sfxMuted) return; // Treat speech as SFX
                 const synth = window.speechSynthesis; 
                 const utter = new SpeechSynthesisUtterance(t); 
                 utter.lang = 'en-US'; 
@@ -1244,7 +1268,6 @@
                 );
             };
 
-            // 漫畫顯示組件更新
             const StoryViewer = () => {
                 if (!viewingStory) return null;
                 const story = STORIES[viewingStory];
@@ -1256,7 +1279,6 @@
                                 <button onClick={() => setViewingStory(null)} className="text-slate-400 hover:text-white"><Icons.X /></button>
                             </div>
                             <div className="overflow-y-auto p-6 space-y-6 text-center">
-                                {/* 顯示漫畫圖片 */}
                                 <div className="w-full bg-slate-800 flex items-center justify-center border border-slate-700 rounded overflow-hidden">
                                     <img src={story.image} alt={story.title} className="w-full h-auto object-cover" />
                                 </div>
@@ -1273,7 +1295,14 @@
                         <StoryViewer />
                         
                         <div className="absolute top-4 right-4 z-50 flex gap-2">
-                            <button onClick={() => setIsMuted(!isMuted)} className="p-2 bg-black/40 rounded-full text-white border border-white/20">{isMuted ? '🔇' : <Icons.Music size={18}/>}</button>
+                            {/* FIX: Two buttons for audio */}
+                            <button onClick={() => setBgmMuted(!bgmMuted)} className={`p-2 rounded-full border ${bgmMuted ? 'bg-red-900/80 border-red-500 text-red-200' : 'bg-black/40 border-white/20 text-white'}`}>
+                                {bgmMuted ? '🔇' : <Icons.Music size={18}/>}
+                            </button>
+                            <button onClick={() => setSfxMuted(!sfxMuted)} className={`p-2 rounded-full border ${sfxMuted ? 'bg-red-900/80 border-red-500 text-red-200' : 'bg-black/40 border-white/20 text-white'}`}>
+                                {sfxMuted ? '🔇' : '🔊'}
+                            </button>
+
                             <button onClick={() => { if(gameState==='BATTLE') setHomeConfirm(true); else { stopAllBgm(); setGameState('START'); } }} className="p-2 bg-black/40 rounded-full text-white border border-white/20"><Icons.HomeIcon size={18}/></button>
                         </div>
 
@@ -1488,5 +1517,6 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<SpellingRPG />);
     </script>
-</body>
-</html>
+
+
+</body></html>
