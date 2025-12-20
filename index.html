@@ -1,23 +1,20 @@
-<!DOCTYPE html><html lang="zh-TW"><head><meta name="x-poe-datastore-behavior" content="local_only"><meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta name="x-poe-datastore-behavior" content="local_only">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://code.jquery.com https://unpkg.com https://d3js.org https://threejs.org https://cdn.plot.ly https://stackpath.bootstrapcdn.com https://maps.googleapis.com https://cdn.tailwindcss.com https://ajax.googleapis.com https://kit.fontawesome.com https://cdn.datatables.net https://maxcdn.bootstrapcdn.com https://code.highcharts.com https://tako-static-assets-production.s3.amazonaws.com https://www.youtube.com https://fonts.googleapis.com https://fonts.gstatic.com https://pfst.cf2.poecdn.net https://puc.poecdn.net https://i.imgur.com https://wikimedia.org https://*.icons8.com https://*.giphy.com https://picsum.photos https://images.unsplash.com; frame-src 'self' https://www.youtube.com https://trytako.com; child-src 'self'; manifest-src 'self'; worker-src 'self'; upgrade-insecure-requests; block-all-mixed-content;">
     <meta charset="UTF-8">
-    <!-- 
-        KEYBOARD FIX: Added 'interactive-widget=resizes-content' 
-        This ensures the game resizes when the mobile keyboard opens.
-    -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <title>Spelling RPG - 聖言傳教士傳說</title>
     
-    <!-- SEO & Social Sharing -->
-    <meta name="description" content="Spelling RPG 是一款結合復古角色扮演的免費英文單字遊戲。透過聽音拼字發動攻擊，擊敗怪物並升級你的勇者！">
-    <meta property="og:title" content="Spelling RPG - 用英文單字來場大冒險！">
-    <meta property="og:description" content="覺得背單字很無聊嗎？來試試這款復古風網頁遊戲！⚔️ 扮演勇者，聽發音、拼單字、打怪升級。">
-    <meta property="og:type" content="website">
-
+    <!-- 核心庫 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin="" src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script crossorigin="" src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/framer-motion@10.16.16/dist/framer-motion.js"></script>
+    
+    <!-- 修正後的 Framer Motion 連結 -->
+    <script src="https://cdn.jsdelivr.net/npm/framer-motion@10.16.4/dist/framer-motion.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Noto+Serif+TC:wght@700;900&display=swap');
@@ -27,7 +24,7 @@
 
         body { 
             user-select: none; -webkit-user-select: none; background-color: #000; 
-            margin: 0; padding: 0; height: 100vh; width: 100vw; overflow: hidden;
+            margin: 0; padding: 0; height: 100dvh; width: 100vw; overflow: hidden;
             font-family: 'Noto Serif TC', serif;
         }
 
@@ -37,7 +34,7 @@
         }
 
         .game-frame {
-            width: 100%; height: 100%; max-width: 480px;
+            width: 100%; height: 100dvh; max-width: 480px;
             background: #020617; position: relative;
             display: flex; flex-direction: column; overflow: hidden;
         }
@@ -47,7 +44,7 @@
         .rpg-button { background: linear-gradient(to bottom, #78350f, #451a03); border: 2px solid #fbbf24; color: white; }
         
         .tactic-btn {
-            position: relative; width: 70px; height: 70px;
+            position: relative; width: 60px; height: 60px;
             border-radius: 50%; border: 3px solid #475569;
             background: #0f172a; overflow: hidden;
             transition: all 0.2s; flex-shrink: 0;
@@ -60,7 +57,7 @@
 
         .tactic-btn img { width: 100%; height: 100%; object-fit: cover; }
         
-        .kbd-container { background: #1e293b; padding: 8px 4px 20px 4px; }
+        .kbd-container { background: #1e293b; padding: 8px 4px 12px 4px; flex-shrink: 0; }
         .kbd-row { display: flex; justify-content: center; gap: 4px; width: 100%; margin-bottom: 4px; }
         .kbd-key { 
             flex: 1; height: 42px; max-width: 36px; 
@@ -89,9 +86,60 @@
         .new-badge { animation: bounce 1s infinite; }
         @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 
-        /* 暴風雪特效 */
         .blizzard-blur { animation: blizzard 3s infinite; }
         @keyframes blizzard { 0%, 100% { filter: blur(0px); opacity: 1; } 50% { filter: blur(4px); opacity: 0.4; } 25%, 75% { filter: blur(1px); opacity: 0.8; } }
+
+        .word-display-area {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 10px;
+            overflow-y: auto;
+            min-height: 100px;
+        }
+        
+        .char-box {
+            display: inline-flex;
+            width: 24px;
+            height: 40px;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            font-family: monospace;
+            font-weight: 900;
+            font-size: 28px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .word-complete-effect {
+            animation: burstEffect 0.5s ease-out forwards;
+        }
+        @keyframes burstEffect {
+            0% { background: transparent; box-shadow: 0 0 0px transparent; transform: scale(1); }
+            50% { background: #fbbf24; opacity: 0.5; box-shadow: 0 0 25px #fbbf24; transform: scale(1.5); }
+            100% { background: transparent; box-shadow: 0 0 5px #fbbf24; transform: scale(1); }
+        }
+        
+        .curfew-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: rgba(0,0,0,0.95);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            color: white; text-align: center;
+        }
+
+        .rainbow-text {
+            background: linear-gradient(to right, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #a855f7);
+            -webkit-background-clip: text;
+            color: transparent;
+            animation: rainbow 1s linear infinite;
+            font-weight: 900;
+            text-shadow: 0 0 10px rgba(255,255,255,0.3);
+            font-family: 'Cinzel', serif;
+        }
+        @keyframes rainbow { 0% { filter: hue-rotate(0deg); } 100% { filter: hue-rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -108,6 +156,10 @@
             Music: (p) => <Icon path='<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>' {...p} />,
             Book: (p) => <Icon path='<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>' {...p} />,
             X: (p) => <Icon path='<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>' {...p} />,
+            Maximize: (p) => <Icon path='<path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>' {...p} />,
+            Minimize: (p) => <Icon path='<path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>' {...p} />,
+            ChevronLeft: (p) => <Icon path='<polyline points="15 18 9 12 15 6"/>' {...p} />,
+            ChevronRight: (p) => <Icon path='<polyline points="9 18 15 12 9 6"/>' {...p} />,
         };
 
         const Icon = ({ path, className, size = 24 }) => (
@@ -121,18 +173,18 @@
             btn_skill_shield: "./assets/btn_skill_shield.png", btn_skill_water: "./assets/btn_skill_water.png", btn_skill_ice: "./assets/btn_skill_ice.png", btn_skill_fire: "./assets/btn_skill_fire.png", btn_skill_void: "./assets/btn_skill_void.png", btn_skill_thunder: "./assets/btn_skill_thunder.png", btn_skill_holy: "./assets/btn_skill_holy.png",
             mob_bees: "./assets/mob_bees.png", mob_boar: "./assets/mob_boar.png", boss_dazhuang: "./assets/boss_dazhuang.png", mob_doubt: "./assets/mob_doubt.png", mob_lazy: "./assets/mob_lazy.png", boss_mirror: "./assets/boss_mirror.png", mob_rabbit: "./assets/mob_rabbit.png", mob_cloud: "./assets/mob_cloud.png", boss_sylphie: "./assets/boss_sylphie.png", mob_iceslime: "./assets/mob_iceslime.png", mob_snowbaby: "./assets/mob_snowbaby.png", boss_alpha: "./assets/boss_alpha.png", mob_firedrake: "./assets/mob_firedrake.png", mob_lavabeetle: "./assets/mob_lavabeetle.png", boss_agni: "./assets/boss_agni.png", mob_gargoyle: "./assets/mob_gargoyle.png", mob_shadowpriest: "./assets/mob_shadowpriest.png", boss_sophia: "./assets/boss_sophia.png", mob_voidhand: "./assets/mob_voidhand.png", mob_silence: "./assets/mob_silence.png", boss_lord_silence: "./assets/boss_lord_silence.png",
             item_shield: "./assets/item_shield.png", item_amulet_water: "./assets/item_amulet_water.png", item_boots_thunder: "./assets/item_boots_thunder.png", item_amulet_ice: "./assets/item_amulet_ice.png", item_staff_fire: "./assets/item_staff_fire.png", item_staff_holy: "./assets/item_staff_holy.png", item_ring_pandora: "./assets/item_ring_pandora.png",
-            // 漫畫資源
             comic1: "./assets/comic1.jpg", comic2: "./assets/comic2.jpg", comic3: "./assets/comic3.jpg", comic4: "./assets/comic4.jpg", comic5: "./assets/comic5.jpg", comic6: "./assets/comic6.jpg", comic7: "./assets/comic7.jpg"
         };
 
+        // *** 強化版道具數據 (Buffed Items) ***
         const ITEMS = [
-            { id: 'village_shield', name: '村莊木盾', img: ASSETS.item_shield, btnImg: ASSETS.btn_skill_shield, type: 'active', mpCost: 100, lore: '大壯哥使用的舊盾牌，雖然有些刮痕，但依然堅固。這是你踏出家門的第一份保障。', obtain: '【我家門外】通關後 100% 獲得。', usage: '主動：獲得 40 點護盾。' },
-            { id: 'water_amulet', name: '問心水珠', img: ASSETS.item_amulet_water, btnImg: ASSETS.btn_skill_water, type: 'active', mpCost: 100, lore: '在瀑布深處凝結的奇異寶石，握在手中能感受到平靜的涼意。據說能洗滌心靈的疲憊。', obtain: '【問心瀑布】機率掉落 (普通15%/困難30%)。', usage: '主動：立即回復 250 點 HP。' },
-            { id: 'thunder_boots', name: '疾風之靴', img: ASSETS.item_boots_thunder, btnImg: ASSETS.btn_skill_thunder, type: 'passive', mpCost: 0, lore: '精靈族製作的靴子，穿上後感覺身體輕盈得像風一樣。能讓你在思考時爭取更多時間。', obtain: '【青青草原】機率掉落 (普通15%/困難30%)。', usage: '被動：每回合時間增加 8 秒。' },
-            { id: 'ice_amulet', name: '永恆冰晶', img: ASSETS.item_amulet_ice, btnImg: ASSETS.btn_skill_ice, type: 'active', mpCost: 100, lore: '阿爾法騎士盔甲上的碎片，散發著永不融化的寒氣。能凍結敵人的行動。', obtain: '【無痕冰川】機率掉落 (普通15%/困難30%)。', usage: '主動：令怪物攻擊 CD +3。' },
-            { id: 'fire_staff', name: '龍息法杖', img: ASSETS.item_staff_fire, btnImg: ASSETS.btn_skill_fire, type: 'active', mpCost: 150, lore: '鑲嵌著古龍牙齒的法杖，頂端燃燒著不滅的火焰。揮舞時能引發強大的破壞力。', obtain: '【火龍領地】機率掉落 (普通15%/困難30%)。', usage: '主動：下一次攻擊傷害 +80%。' },
-            { id: 'holy_staff', name: '大主教權杖', img: ASSETS.item_staff_holy, btnImg: ASSETS.btn_skill_holy, type: 'passive', mpCost: 0, lore: '索菲亞老師生前持有的權杖，蘊含著神聖的語言力量。對母音的共鳴特別強烈。', obtain: '【試煉教堂】機率掉落 (普通15%/困難30%)。', usage: '被動：輸入母音額外加傷。' },
-            { id: 'pandora_ring', name: '虛空之戒', img: ASSETS.item_ring_pandora, btnImg: ASSETS.btn_skill_void, type: 'active', mpCost: 200, lore: '來自虛無深處的遺物，能夠扭曲現實。戴上它，語言的規則將由你改寫。', obtain: '【最終決戰】機率掉落 (普通15%/困難30%)。', usage: '主動：當前單字直接完成。' },
+            { id: 'village_shield', name: '守護者之盾 (強化)', img: ASSETS.item_shield, btnImg: ASSETS.btn_skill_shield, type: 'active', mpCost: 100, lore: '經過工匠精心強化的盾牌，表面流動著金色的光芒。現在能抵擋致命的攻擊。', obtain: '【我家門外】通關後 100% 獲得。', usage: '主動：獲得 150 點護盾。' },
+            { id: 'water_amulet', name: '淨化水珠 (強化)', img: ASSETS.item_amulet_water, btnImg: ASSETS.btn_skill_water, type: 'active', mpCost: 100, lore: '吸收了月光精華的水珠，不僅能治癒傷口，還能洗滌一切負面狀態。', obtain: '【問心瀑布】機率掉落 (普通15%/困難30%)。', usage: '主動：回復 400 HP 並解除異常狀態。' },
+            { id: 'thunder_boots', name: '閃電行者之靴 (強化)', img: ASSETS.item_boots_thunder, btnImg: ASSETS.btn_skill_thunder, type: 'passive', mpCost: 0, lore: '附魔了高階風魔法的靴子，穿上它，時間彷彿為你而靜止。', obtain: '【青青草原】機率掉落 (普通15%/困難30%)。', usage: '被動：每回合時間增加 12 秒。' },
+            { id: 'ice_amulet', name: '絕對零度冰晶 (強化)', img: ASSETS.item_amulet_ice, btnImg: ASSETS.btn_skill_ice, type: 'active', mpCost: 100, lore: '連時間都能凍結的極寒冰晶。能讓最強大的敵人長時間無法動彈。', obtain: '【無痕冰川】機率掉落 (普通15%/困難30%)。', usage: '主動：令怪物攻擊 CD +5。' },
+            { id: 'fire_staff', name: '滅世龍炎杖 (強化)', img: ASSETS.item_staff_fire, btnImg: ASSETS.btn_skill_fire, type: 'active', mpCost: 150, lore: '杖尖燃燒著來自地獄的黑炎，能瞬間將敵人化為灰燼。', obtain: '【火龍領地】機率掉落 (普通15%/困難30%)。', usage: '主動：下一次攻擊傷害 +150%。' },
+            { id: 'holy_staff', name: '教皇權杖 (強化)', img: ASSETS.item_staff_holy, btnImg: ASSETS.btn_skill_holy, type: 'passive', mpCost: 0, lore: '象徵著至高無上權力的權杖，每一個母音都蘊含著神罰的力量。', obtain: '【試煉教堂】機率掉落 (普通15%/困難30%)。', usage: '被動：輸入母音傷害大幅增加 (+15)。' },
+            { id: 'pandora_ring', name: '真理之戒 (強化)', img: ASSETS.item_ring_pandora, btnImg: ASSETS.btn_skill_void, type: 'active', mpCost: 200, lore: '洞悉世間真理的戒指。不僅能改寫現實，還能從虛空中汲取魔力。', obtain: '【最終決戰】機率掉落 (普通15%/困難30%)。', usage: '主動：秒殺單字並回復 50 MP。' },
         ];
 
         const LEVELS = [
@@ -145,7 +197,6 @@
             { id: 'final', name: '最終決戰', minTopics: 5, waves: [{ name: '虛空之手', img: ASSETS.mob_voidhand, hp: 3000, dmg: 300 }, { name: '沉默陰影', img: ASSETS.mob_silence, hp: 3500, dmg: 320 }, { name: '沉默之主．虛無', img: ASSETS.boss_lord_silence, hp: 10000, dmg: 500, isBoss: true }], drop: 'pandora_ring', bg: ASSETS.bg_final, desc: "語言的存亡之戰。", fieldEffect: "虛空：隨機封鎖技能" },
         ];
 
-        // 漫畫設定更新
         const STORIES = {
             home: { title: "出發", image: ASSETS.comic1, content: "大壯哥拍了拍我的肩膀：「外面的世界很危險，但如果是你的話，一定沒問題的。」\n\n我握緊了手中的盾牌，回頭看了一眼生活了十年的村莊。\n\n「我會回來的，帶著傳說一起。」" },
             waterfall: { title: "倒影", image: ASSETS.comic2, content: "瀑布的水聲轟隆作響，但我卻聽到了另一個聲音。\n\n『你做不到的。』鏡中的我這樣說。\n\n我深吸一口氣，打破了水面。「不，我已經做到了。」" },
@@ -156,7 +207,8 @@
             final: { title: "新的篇章", image: ASSETS.comic7, content: "虛無消散了，世界重新充滿了聲音。\n\n人們的歡笑、鳥兒的歌唱、風的低語。\n\n我合上書本，這就是我的故事，也是我們的故事。" }
         };
 
-		const WORDS_DB = {
+        // *** 完整單字庫 (Full Database) ***
+        const WORDS_DB = {
 			'P.3': {
 				'School Events (學校活動)': [
 					{ en: "Open Day", zh: "開放日" },
@@ -846,11 +898,7 @@
         const sfx = { click: new Audio('./assets/sounds/click.wav'), success: new Audio('./assets/sounds/success.wav'), skill: new Audio('./assets/sounds/skill.wav'), hit: new Audio('./assets/sounds/hit.wav'), hurt: new Audio('./assets/sounds/hurt.wav'), victory: new Audio('./assets/sounds/victory.wav'), failed: new Audio('./assets/sounds/failed.wav'), entermission: new Audio('./assets/sounds/entermission.wav') };
         const bgm = { start: new Audio('./assets/sounds/bgm_start.ogg'), battle: new Audio('./assets/sounds/bgm_battle.ogg'), final: new Audio('./assets/sounds/bgm_final.mp3') };
         bgm.start.loop = true; bgm.battle.loop = true; bgm.final.loop = true;
-        
-        // FIX: Set default volume lower (30%)
-        bgm.start.volume = 0.3;
-        bgm.battle.volume = 0.3;
-        bgm.final.volume = 0.3;
+        bgm.start.volume = 0.3; bgm.battle.volume = 0.3; bgm.final.volume = 0.3;
 
         const shuffleArray = (array) => {
             let arr = [...array];
@@ -868,15 +916,15 @@
             const [selectedItemInfo, setSelectedItemInfo] = useState(null); 
             const [result, setResult] = useState({ win: false, time: 0 });
             
-            // FIX: Separate mute states
             const [bgmMuted, setBgmMuted] = useState(false);
             const [sfxMuted, setSfxMuted] = useState(false);
+            const [isFullscreen, setIsFullscreen] = useState(false);
 
             const [homeConfirm, setHomeConfirm] = useState(false);
             const [lockInput, setLockInput] = useState(false);
             const [viewingStory, setViewingStory] = useState(null);
 
-            const [battle, setBattle] = useState({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: null, enemyHp: 100, enemyMaxHp: 100, enemyCd: 2, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false });
+            const [battle, setBattle] = useState({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: null, enemyHp: 100, enemyMaxHp: 100, enemyCd: 2, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false, specialComboText: null });
             
             const [calcState, setCalcState] = useState({ step: 0, base: 0, comboPct: 0, topicPct: 0, skillPct: 0, total: 0, triggerBase: 0, triggerCombo: 0, triggerSkill: 0 });
             const [processingTurn, setProcessingTurn] = useState(false); 
@@ -885,10 +933,70 @@
             const [timer, setTimer] = useState({ val: 30, max: 30, active: false });
             const [startTime, setStartTime] = useState(0);
 
+            // 健康遊戲系統狀態
+            const [curfewState, setCurfewState] = useState(null); // 'SCHOOL' | 'SLEEP' | null
+            const [adminBypass, setAdminBypass] = useState(false);
+            const [titleClickCount, setTitleClickCount] = useState(0);
+
             useEffect(() => { const saved = localStorage.getItem('spelling_rpg_wix_final'); if (saved) setPlayer(p => ({ ...p, ...JSON.parse(saved) })); }, []);
             useEffect(() => { localStorage.setItem('spelling_rpg_wix_final', JSON.stringify({ unlockedLevels: player.unlockedLevels, inventory: player.inventory, grade: player.grade, equippedItem: player.equippedItem, unlockedStories: player.unlockedStories, hasNewStory: player.hasNewStory })); }, [player]);
 
-            // FIX: Updated BGM Logic to use bgmMuted
+            // 健康遊戲系統檢測
+            useEffect(() => {
+                const checkTime = () => {
+                    if (adminBypass) { setCurfewState(null); return; }
+                    const now = new Date();
+                    const day = now.getDay(); // 0=Sun, 1=Mon, ..., 6=Sat
+                    const h = now.getHours();
+
+                    // 上課時間：週一(1)至週五(5)，08:00 - 15:00 (不含15:00)
+                    const isSchoolTime = (day >= 1 && day <= 5) && (h >= 8 && h < 15);
+                    // 睡覺時間：每日 22:00 - 06:00
+                    const isSleepTime = (h >= 22 || h < 6);
+
+                    if (isSchoolTime) setCurfewState('SCHOOL');
+                    else if (isSleepTime) setCurfewState('SLEEP');
+                    else setCurfewState(null);
+                };
+                checkTime();
+                const interval = setInterval(checkTime, 1000);
+                return () => clearInterval(interval);
+            }, [adminBypass]);
+
+            const handleTitleClick = () => {
+                const newCount = titleClickCount + 1;
+                setTitleClickCount(newCount);
+                if (newCount >= 5) {
+                    const pwd = prompt("請輸入管理員密碼：");
+                    if (pwd === "BPEC27112066") {
+                        setAdminBypass(true);
+                        alert("健康系統已解除限制。");
+                    } else {
+                        alert("密碼錯誤。");
+                    }
+                    setTitleClickCount(0);
+                }
+            };
+
+            useEffect(() => {
+                const handleVisibilityChange = () => {
+                    if (document.visibilityState === 'hidden') {
+                        Object.values(bgm).forEach(b => b.pause());
+                    } else {
+                        if (!bgmMuted) {
+                            if (gameState === 'BATTLE') {
+                                if (levelInfo.id === 'final') bgm.final.play().catch(()=>{});
+                                else bgm.battle.play().catch(()=>{});
+                            } else if (gameState !== 'RESULT') {
+                                bgm.start.play().catch(()=>{});
+                            }
+                        }
+                    }
+                };
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }, [bgmMuted, gameState, levelInfo.id]);
+
             useEffect(() => {
                 if (bgmMuted) { 
                     Object.values(bgm).forEach(b => b.pause()); 
@@ -938,11 +1046,10 @@
                 }
             }, [battle.phase]);
 
-            // FIX: Updated SFX Logic to use sfxMuted
             const playSfx = (n) => { 
                 if (!sfxMuted && sfx[n]) { 
                     sfx[n].currentTime = 0; 
-                    sfx[n].volume = 1.0; // SFX stays loud
+                    sfx[n].volume = 1.0;
                     sfx[n].play().catch(() => {}); 
                 } 
             };
@@ -950,13 +1057,27 @@
             const stopAllBgm = () => { Object.values(bgm).forEach(b => b.pause()); };
             
             const speak = (t, r = 1.0) => { 
-                if (sfxMuted) return; // Treat speech as SFX
+                if (sfxMuted) return;
                 const synth = window.speechSynthesis; 
                 const utter = new SpeechSynthesisUtterance(t); 
                 utter.lang = 'en-US'; 
                 utter.rate = r; 
                 utter.volume = 1.0;
                 synth.speak(utter); 
+            };
+
+            const toggleFullscreen = () => {
+                if (!document.fullscreenElement) {
+                    document.documentElement.requestFullscreen().catch(e => {
+                        console.error(`全螢幕失敗: ${e.message}`);
+                    });
+                    setIsFullscreen(true);
+                } else {
+                    if (document.exitFullscreen) {
+                        document.exitFullscreen();
+                        setIsFullscreen(false);
+                    }
+                }
             };
 
             const initBattle = () => {
@@ -966,18 +1087,18 @@
                 
                 setTimeout(() => {
                     const hpMult = levelInfo.difficulty === 'hard' ? 2.0 : 1.0;
-                    
                     let startCd = 2;
-                    if (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') {
-                        startCd = 1;
-                    }
+                    if (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') startCd = 1;
 
-                    let q = []; player.selectedTopics.forEach(t => { if(WORDS_DB[player.grade][t]) q = q.concat(WORDS_DB[player.grade][t]); });
-                    if(q.length === 0) { alert("無單字資料"); return; }
+                    let q = []; player.selectedTopics.forEach(t => { if(WORDS_DB[player.grade] && WORDS_DB[player.grade][t]) q = q.concat(WORDS_DB[player.grade][t]); });
+                    if(q.length === 0) { 
+                        q = [{en: "apple", zh: "蘋果"}, {en: "banana", zh: "香蕉"}]; 
+                    }
                     q = shuffleArray(q);
                     
                     const mob = lvl.waves[0];
-                    setBattle({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: mob, enemyHp: mob.hp * hpMult, enemyMaxHp: mob.hp * hpMult, enemyCd: startCd, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: "戰鬥開始！", skillActive: false, bossPhase: 0, isSilenced: false });
+                    setBattle({ playerHp: 1000, playerMaxHp: 1000, playerMp: 0, playerMaxMp: 200, shield: 0, waveIndex: 0, currentEnemy: null, enemyHp: 100, enemyMaxHp: 100, enemyCd: startCd, enemyMaxCd: 2, phase: 'TACTICAL', combo: 0, rawScore: 0, selectedMode: null, skillConfirming: false, finalDamage: 0, damagePopup: null, playerDamagePopup: null, healPopup: null, messagePopup: "戰鬥開始！", skillActive: false, bossPhase: 0, isSilenced: false, specialComboText: null });
+                    setBattle(b => ({...b, currentEnemy: mob, enemyHp: mob.hp * hpMult, enemyMaxHp: mob.hp * hpMult}));
                     setInputState({ queue: q, currentIndex: 0, currentInput: '', started: false });
                     setTimer({ val: 30, max: 30, active: false }); setStartTime(Date.now()); setGameState('BATTLE');
                     setProcessingTurn(false);
@@ -1003,30 +1124,61 @@
                         const target = s.queue[s.currentIndex].en; let temp = s.currentInput; let nextIdx = temp.length;
                         const skip = (idx) => { let i = idx; while (i < target.length && /[^a-zA-Z]/.test(target[i])) { temp += target[i]; i++; } return i; };
                         nextIdx = skip(nextIdx);
+
                         if (nextIdx < target.length && target[nextIdx].toLowerCase() === char) {
-                            playSfx('click'); temp += target[nextIdx]; nextIdx = skip(nextIdx + 1);
-                            setBattle(b => ({ ...b, playerMp: Math.min(b.playerMaxMp, b.playerMp + 1) }));
-                            setCalcState(prev => ({ ...prev, base: prev.base + 1, triggerBase: prev.triggerBase + 1 }));
+                            playSfx('click'); 
+                            temp += target[nextIdx]; 
+                            
+                            let letterScore = 10;
+                            if (player.equippedItem === 'holy_staff' && 'aeiouAEIOU'.includes(target[nextIdx])) letterScore += 15;
+
+                            setBattle(b => ({ 
+                                ...b, 
+                                playerMp: Math.min(b.playerMaxMp, b.playerMp + 1),
+                                rawScore: b.rawScore + letterScore
+                            }));
+
+                            setCalcState(prev => {
+                                return { 
+                                    ...prev, 
+                                    base: prev.base + letterScore, 
+                                    triggerBase: prev.triggerBase + 1
+                                };
+                            });
 
                             if (!s.started) s.started = true;
                             
+                            nextIdx = skip(nextIdx + 1);
                             if (temp.length >= target.length) {
                                 playSfx('success');
                                 const finishWord = () => {
-                                    let wordScore = 0;
-                                    const letters = target.replace(/[^a-zA-Z]/g,'');
-                                    for(let l of letters) {
-                                        let bonus = 0;
-                                        if (player.equippedItem === 'holy_staff' && 'aeiouAEIOU'.includes(l)) bonus = 5; 
-                                        wordScore += (10 + bonus);
-                                    }
-                                    wordScore += 10; 
+                                    const finalBonus = 10; 
+                                    const isLongWord = target.length >= 12;
+                                    const comboGain = isLongWord ? 3 : 1;
                                     
-                                    const newCombo = battle.combo + 1;
-                                    const comboBonusPct = newCombo > 1 ? (newCombo - 1) * (battle.selectedMode === 'A' ? 10 : 5) : 0;
-                                    setCalcState(prev => ({ ...prev, base: prev.base + wordScore, comboPct: comboBonusPct, triggerCombo: prev.triggerCombo + 1, triggerBase: prev.triggerBase + 1 }));
+                                    setCalcState(prev => {
+                                        const newCombo = cur.combo + comboGain;
+                                        const comboBonusPct = newCombo > 0 ? newCombo * (cur.selectedMode === 'A' ? 10 : 5) : 0;
+                                        return { 
+                                            ...prev, 
+                                            base: prev.base + finalBonus, 
+                                            comboPct: comboBonusPct, 
+                                            triggerCombo: prev.triggerCombo + 1, 
+                                            triggerBase: prev.triggerBase + 1 
+                                        };
+                                    });
 
-                                    setBattle(b => ({ ...b, rawScore: b.rawScore + wordScore, combo: newCombo }));
+                                    setBattle(b => ({ 
+                                        ...b, 
+                                        rawScore: b.rawScore + finalBonus, 
+                                        combo: b.combo + comboGain,
+                                        specialComboText: isLongWord ? "特長詞語 +3 COMBO！！！" : null
+                                    }));
+                                    
+                                    if (isLongWord) {
+                                        setTimeout(() => setBattle(b => ({...b, specialComboText: null})), 1000);
+                                    }
+
                                     setInputState(ns => {
                                         let nextIndex = ns.currentIndex + 1;
                                         let nextQueue = ns.queue;
@@ -1059,11 +1211,8 @@
 
             const startInputPhase = () => { 
                 let time = 30; 
-                if (player.equippedItem === 'thunder_boots') time += 8; 
-                
-                if (levelInfo.difficulty === 'hard' && levelInfo.id === 'waterfall') {
-                    time = 25;
-                }
+                if (player.equippedItem === 'thunder_boots') time += 12; 
+                if (levelInfo.difficulty === 'hard' && levelInfo.id === 'waterfall') time = 25;
 
                 let silenced = false;
                 if (levelInfo.difficulty === 'hard' && levelInfo.id === 'final') {
@@ -1075,12 +1224,11 @@
                 }
 
                 setTimer({ val: time, max: time, active: true }); 
-                setBattle(b => ({ ...b, phase: 'INPUT', rawScore: 0, combo: 0, isSilenced: silenced })); 
+                setBattle(b => ({ ...b, phase: 'INPUT', rawScore: 0, combo: 0, isSilenced: silenced, specialComboText: null })); 
                 
                 const lvl = LEVELS.find(l => l.id === levelInfo.id);
                 const topicBonusPct = player.selectedTopics.length > lvl.minTopics ? (player.selectedTopics.length - lvl.minTopics) * 7 : 0;
                 setCalcState({ step: 0, base: 0, comboPct: 0, topicPct: topicBonusPct, skillPct: 0, total: 0, triggerBase: 0, triggerCombo: 0, triggerSkill: 0 });
-                
                 setProcessingTurn(false);
             };
 
@@ -1111,13 +1259,12 @@
                                 if (b.waveIndex < lvlData.waves.length - 1) {
                                     const nextMob = lvlData.waves[b.waveIndex + 1];
                                     const hMult = levelInfo.difficulty === 'hard' ? 2.0 : 1.0;
-                                    
                                     let nextStartCd = 2;
                                     if (levelInfo.difficulty === 'hard' && levelInfo.id === 'grassland') nextStartCd = 1;
 
                                     setTimeout(() => setBattle(bb => ({ ...bb, messagePopup: null })), 1500);
                                     setInputState(s => ({...s, started: false}));
-                                    return { ...b, waveIndex: b.waveIndex + 1, currentEnemy: nextMob, enemyHp: nextMob.hp * hMult, enemyMaxHp: nextMob.hp * hMult, enemyCd: nextStartCd, enemyMaxCd: 2, phase: 'TACTICAL', selectedMode: null, messagePopup: "下一波！", damagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false };
+                                    return { ...b, waveIndex: b.waveIndex + 1, currentEnemy: nextMob, enemyHp: nextMob.hp * hMult, enemyMaxHp: nextMob.hp * hMult, enemyCd: nextStartCd, enemyMaxCd: 2, phase: 'TACTICAL', selectedMode: null, messagePopup: "下一波！", damagePopup: null, skillActive: false, bossPhase: 0, isSilenced: false, specialComboText: null };
                                 } else { 
                                     playSfx('victory'); 
                                     if (lvlData.drop && !player.inventory.includes(lvlData.drop)) {
@@ -1130,13 +1277,9 @@
                                     const nextLvlIdx = LEVELS.findIndex(l => l.id === lvlData.id) + 1;
                                     if (nextLvlIdx < LEVELS.length) {
                                         const nextId = LEVELS[nextLvlIdx].id;
-                                        if (!player.unlockedLevels.includes(nextId)) {
-                                            setPlayer(p => ({...p, unlockedLevels: [...p.unlockedLevels, nextId]}));
-                                        }
+                                        if (!player.unlockedLevels.includes(nextId)) setPlayer(p => ({...p, unlockedLevels: [...p.unlockedLevels, nextId]}));
                                     }
-                                    if (!player.unlockedStories.includes(lvlData.id)) {
-                                        setPlayer(p => ({ ...p, unlockedStories: [...p.unlockedStories, lvlData.id], hasNewStory: true }));
-                                    }
+                                    if (!player.unlockedStories.includes(lvlData.id)) setPlayer(p => ({ ...p, unlockedStories: [...p.unlockedStories, lvlData.id], hasNewStory: true }));
 
                                     setResult({ win: true, time: Math.floor((Date.now() - startTime) / 1000) }); 
                                     setGameState('RESULT'); 
@@ -1144,8 +1287,7 @@
                                 }
                             }
                             
-                            let next = { ...b, damagePopup: null, skillActive: false }; 
-                            
+                            let next = { ...b, damagePopup: null, skillActive: false, specialComboText: null }; 
                             if (levelInfo.difficulty === 'hard' && levelInfo.id === 'dragon') {
                                 next.playerHp = Math.max(0, next.playerHp - 50);
                                 next.playerDamagePopup = (next.playerDamagePopup || 0) + 50;
@@ -1156,7 +1298,6 @@
                             if (next.enemyCd <= 1) {
                                 let rawDmg = next.currentEnemy.dmg || 100;
                                 if (levelInfo.difficulty === 'hard') rawDmg = Math.floor(rawDmg * 1.25);
-                                
                                 if (next.currentEnemy.isBoss) {
                                     if (next.bossPhase % 2 !== 0) {
                                         rawDmg = Math.floor(rawDmg * 1.5); 
@@ -1177,7 +1318,6 @@
                                 next.enemyCd -= 1; 
                             }
                             setTimeout(() => setBattle(bb => ({...bb, playerDamagePopup: null})), 1000);
-                            
                             setInputState(s => ({...s, started: false}));
                             return { ...next, phase: 'TACTICAL', selectedMode: null };
                         });
@@ -1193,7 +1333,6 @@
                     setTimeout(() => setBattle(b => ({...b, messagePopup: null})), 1000);
                     return;
                 }
-
                 if (!player.equippedItem) return;
                 const item = ITEMS.find(i => i.id === player.equippedItem);
                 if (item.type === 'passive') return; 
@@ -1202,7 +1341,6 @@
                 if (!battle.skillConfirming) { setBattle({ ...battle, skillConfirming: true }); }
                 else {
                     playSfx('skill');
-                    
                     const isChurchHard = levelInfo.difficulty === 'hard' && levelInfo.id === 'church';
 
                     if (item.id === 'village_shield') {
@@ -1210,79 +1348,142 @@
                             setBattle(b => ({ ...b, messagePopup: "聖光使護盾無效！", playerMp: b.playerMp - 100, skillConfirming: false }));
                             setTimeout(() => setBattle(b => ({...b, messagePopup: null})), 1000);
                         } else {
-                            setBattle(b => ({ ...b, shield: b.shield + 40, playerMp: b.playerMp - 100, skillConfirming: false }));
+                            setBattle(b => ({ ...b, shield: b.shield + 150, playerMp: b.playerMp - 100, skillConfirming: false }));
                         }
                     }
                     if (item.id === 'water_amulet') {
-                        let heal = 250;
-                        if (isChurchHard) heal = 125;
-                        setBattle(b => ({ ...b, playerHp: Math.min(b.playerMaxHp, b.playerHp + heal), playerMp: b.playerMp - 100, skillConfirming: false, healPopup: heal }));
+                        let heal = 400;
+                        if (isChurchHard) heal = 200;
+                        setBattle(b => ({ ...b, playerHp: Math.min(b.playerMaxHp, b.playerHp + heal), playerMp: b.playerMp - 100, skillConfirming: false, healPopup: heal, isSilenced: false, messagePopup: "淨化！" }));
                     }
-                    if (item.id === 'ice_amulet') setBattle(b => ({ ...b, enemyCd: b.enemyCd + 3, playerMp: b.playerMp - 100, skillConfirming: false }));
+                    if (item.id === 'ice_amulet') setBattle(b => ({ ...b, enemyCd: b.enemyCd + 5, playerMp: b.playerMp - 100, skillConfirming: false }));
                     if (item.id === 'fire_staff') {
                         setBattle(b => ({ ...b, skillConfirming: false, skillActive: true, playerMp: b.playerMp - 150 }));
-                        setCalcState(prev => ({ ...prev, skillPct: 80, triggerSkill: prev.triggerSkill + 1 }));
+                        setCalcState(prev => ({ ...prev, skillPct: 150, triggerSkill: prev.triggerSkill + 1 }));
                     }
                     if (item.id === 'pandora_ring') { 
                         const target = inputState.queue[inputState.currentIndex].en;
                         const wordScore = target.replace(/[^a-zA-Z]/g,'').length * 10 + 10;
-                        setBattle(b => ({ ...b, rawScore: b.rawScore + wordScore, combo: b.combo + 1, playerMp: b.playerMp - 200, skillConfirming: false }));
+                        setBattle(b => ({ ...b, rawScore: b.rawScore + wordScore, combo: b.combo + 1, playerMp: Math.min(b.playerMaxMp, b.playerMp - 200 + 50), skillConfirming: false, messagePopup: "真理吞噬！+50MP" }));
                         const newCombo = battle.combo + 1;
-                        const comboBonusPct = newCombo > 1 ? (newCombo - 1) * (battle.selectedMode === 'A' ? 10 : 5) : 0;
+                        const comboBonusPct = newCombo > 0 ? newCombo * (battle.selectedMode === 'A' ? 10 : 5) : 0;
                         setCalcState(prev => ({ ...prev, base: prev.base + wordScore, comboPct: comboBonusPct, triggerBase: prev.triggerBase + 1, triggerCombo: prev.triggerCombo + 1 }));
-                        
                         setInputState(s => ({ ...s, currentInput: '', currentIndex: (s.currentIndex + 1) % s.queue.length }));
                     }
-                    setTimeout(() => setBattle(bb => ({...bb, healPopup: null})), 1000);
+                    setTimeout(() => setBattle(bb => ({...bb, healPopup: null, messagePopup: null})), 1000);
                 }
             };
 
             const renderInputHint = () => {
-                const target = inputState.queue[inputState.currentIndex].en;
+                const target = inputState.queue[inputState.currentIndex]?.en || "";
                 const blurClass = (levelInfo.difficulty === 'hard' && levelInfo.id === 'glacier') ? 'blizzard-blur' : '';
 
-                if (!inputState.started && (battle.selectedMode === 'A' || battle.selectedMode === 'B')) {
+                const showFullWord = inputState.started && battle.selectedMode === 'B';
+
+                const content = target.split('').map((c, i) => {
+                    const isTyped = i < inputState.currentInput.length;
+                    const isSymbol = /[^a-zA-Z]/.test(c);
+                    
+                    let displayChar = c; 
+                    let colorStyle = { color: '#334155' }; 
+                    
+                    if (isTyped) {
+                        colorStyle = { color: '#fbbf24' }; // 統一黃色
+                    }
+
+                    if (!isTyped && !isSymbol) {
+                        if (showFullWord) {
+                            displayChar = c;
+                        } else {
+                            displayChar = i === 0 ? c : '_';
+                        }
+                    }
+
+                    // 只有最後一個字輸入時觸發特效
+                    const isTriggerChar = isTyped && (i === inputState.currentInput.length - 1) && (inputState.currentInput.length >= target.length);
+
                     return (
-                        <div className={`text-4xl font-mono tracking-widest font-bold text-center ${blurClass}`}>
-                            {target.split('').map((c, i) => {
-                                if (/[^a-zA-Z]/.test(c)) return <span key={i} className="text-slate-500">{c}</span>;
-                                return <span key={i} className="text-slate-700">{i === 0 ? c : '_'}</span>;
-                            })}
+                        <div key={i} className={`char-box ${isTriggerChar ? 'word-complete-effect' : ''}`} style={colorStyle}>
+                            {displayChar}
                         </div>
                     );
-                }
+                });
+
                 return (
-                    <div className={`text-4xl font-mono tracking-widest font-bold text-center ${blurClass}`}>
-                        {target.split('').map((c, i) => {
-                            const isTyped = i < inputState.currentInput.length;
-                            const isSymbol = /[^a-zA-Z]/.test(c);
-                            let displayChar = c; 
-                            let color = isTyped ? 'text-white' : 'text-slate-700';
-                            if (!isTyped && !isSymbol) {
-                                if (battle.selectedMode === 'A') displayChar = i === 0 ? c : '_';
-                                if (battle.selectedMode === 'B') displayChar = c; 
-                            }
-                            return <span key={i} className={color}>{displayChar}</span>;
-                        })}
+                    <div className={`flex flex-wrap justify-center font-mono ${blurClass}`}>
+                        {content}
                     </div>
                 );
             };
 
             const StoryViewer = () => {
                 if (!viewingStory) return null;
-                const story = STORIES[viewingStory];
+                
+                // 根據 LEVELS 順序獲取所有故事 ID
+                const storyOrder = LEVELS.map(l => l.id);
+                const currentIndex = storyOrder.indexOf(viewingStory);
+                const currentId = viewingStory;
+                const story = STORIES[currentId];
+                const isUnlocked = player.unlockedStories.includes(currentId);
+                const levelName = LEVELS.find(l => l.id === currentId)?.name;
+
+                const handleNext = () => {
+                    if (currentIndex < storyOrder.length - 1) {
+                        setViewingStory(storyOrder[currentIndex + 1]);
+                    }
+                };
+
+                const handlePrev = () => {
+                    if (currentIndex > 0) {
+                        setViewingStory(storyOrder[currentIndex - 1]);
+                    }
+                };
+
                 return (
                     <div className="fixed inset-0 z-[100] bg-black/90 flex flex-col items-center justify-center p-4">
                         <div className="w-full max-w-md bg-slate-900 border-2 border-yellow-600 rounded-xl overflow-hidden flex flex-col max-h-[90vh]">
                             <div className="p-4 bg-slate-800 flex justify-between items-center border-b border-slate-700">
-                                <h3 className="text-xl font-bold text-yellow-500">{story.title}</h3>
+                                <h3 className="text-xl font-bold text-yellow-500">{isUnlocked ? story.title : "???"}</h3>
                                 <button onClick={() => setViewingStory(null)} className="text-slate-400 hover:text-white"><Icons.X /></button>
                             </div>
-                            <div className="overflow-y-auto p-6 space-y-6 text-center">
-                                <div className="w-full bg-slate-800 flex items-center justify-center border border-slate-700 rounded overflow-hidden">
-                                    <img src={story.image} alt={story.title} className="w-full h-auto object-cover" />
-                                </div>
-                                <p className="text-slate-200 whitespace-pre-line leading-loose font-serif text-lg">{story.content}</p>
+                            
+                            <div className="relative flex-1 overflow-y-auto bg-slate-950">
+                                {isUnlocked ? (
+                                    <div className="p-6 space-y-6 text-center">
+                                        <div className="w-full bg-slate-800 flex items-center justify-center border border-slate-700 rounded overflow-hidden">
+                                            <img src={story.image} alt={story.title} className="w-full h-auto object-cover" />
+                                        </div>
+                                        <p className="text-slate-200 whitespace-pre-line leading-loose font-serif text-lg">{story.content}</p>
+                                    </div>
+                                ) : (
+                                    <div className="p-6 h-full flex flex-col items-center justify-center text-center space-y-4 min-h-[300px]">
+                                        <div className="w-24 h-24 rounded-full bg-slate-800 flex items-center justify-center border-2 border-slate-700">
+                                            <Icons.Lock size={48} className="text-slate-600" />
+                                        </div>
+                                        <h2 className="text-2xl font-bold text-slate-500">故事未解鎖</h2>
+                                        <p className="text-slate-400">通關【{levelName}】解鎖此篇章</p>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="p-4 bg-slate-800 border-t border-slate-700 flex justify-between items-center">
+                                <button 
+                                    onClick={handlePrev} 
+                                    disabled={currentIndex === 0}
+                                    className={`p-2 rounded-full border ${currentIndex === 0 ? 'border-slate-700 text-slate-700 cursor-not-allowed' : 'border-yellow-600 text-yellow-500 hover:bg-slate-700'}`}
+                                >
+                                    <Icons.ChevronLeft size={24} />
+                                </button>
+                                <span className="text-slate-500 text-sm font-bold">
+                                    {currentIndex + 1} / {storyOrder.length}
+                                </span>
+                                <button 
+                                    onClick={handleNext} 
+                                    disabled={currentIndex === storyOrder.length - 1}
+                                    className={`p-2 rounded-full border ${currentIndex === storyOrder.length - 1 ? 'border-slate-700 text-slate-700 cursor-not-allowed' : 'border-yellow-600 text-yellow-500 hover:bg-slate-700'}`}
+                                >
+                                    <Icons.ChevronRight size={24} />
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -1292,17 +1493,30 @@
             return (
                 <div className="game-container">
                     <div className="game-frame">
+                        {curfewState && (
+                            <div className="curfew-overlay">
+                                <div onClick={handleTitleClick} className="text-6xl mb-4 cursor-pointer select-none active:scale-90 transition-transform">{curfewState === 'SCHOOL' ? '🏫' : '🛌'}</div>
+                                <h2 className="text-2xl font-bold text-yellow-500 mb-2">
+                                    {curfewState === 'SCHOOL' ? '專心上課' : '睡覺晚安'}
+                                </h2>
+                                <p className="text-lg text-slate-300">
+                                    {curfewState === 'SCHOOL' ? '❤️放學再玩' : '❤️瑪卡巴卡'}
+                                </p>
+                            </div>
+                        )}
+
                         <StoryViewer />
                         
                         <div className="absolute top-4 right-4 z-50 flex gap-2">
-                            {/* FIX: Two buttons for audio */}
+                            <button onClick={toggleFullscreen} className="p-2 bg-black/40 rounded-full text-white border border-white/20">
+                                {isFullscreen ? <Icons.Minimize size={18}/> : <Icons.Maximize size={18}/>}
+                            </button>
                             <button onClick={() => setBgmMuted(!bgmMuted)} className={`p-2 rounded-full border ${bgmMuted ? 'bg-red-900/80 border-red-500 text-red-200' : 'bg-black/40 border-white/20 text-white'}`}>
                                 {bgmMuted ? '🔇' : <Icons.Music size={18}/>}
                             </button>
                             <button onClick={() => setSfxMuted(!sfxMuted)} className={`p-2 rounded-full border ${sfxMuted ? 'bg-red-900/80 border-red-500 text-red-200' : 'bg-black/40 border-white/20 text-white'}`}>
                                 {sfxMuted ? '🔇' : '🔊'}
                             </button>
-
                             <button onClick={() => { if(gameState==='BATTLE') setHomeConfirm(true); else { stopAllBgm(); setGameState('START'); } }} className="p-2 bg-black/40 rounded-full text-white border border-white/20"><Icons.HomeIcon size={18}/></button>
                         </div>
 
@@ -1322,8 +1536,10 @@
                                 <motion.div className="absolute -inset-1 bg-cover bg-center scale-105" style={{backgroundImage: `url(${ASSETS.bg_start})`, backgroundColor: '#1e293b' }} />
                                 <div className="absolute inset-0 bg-black/40"></div>
                                 <motion.div initial={{ y: -50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="z-10">
-                                    <h1 className="text-5xl font-black text-yellow-500 mb-2 font-rpg tracking-widest">SPELLING</h1>
-                                    <h1 className="text-6xl font-black text-white mb-8 font-rpg tracking-tighter">RPG</h1>
+                                    <div>
+                                        <h1 className="text-5xl font-black text-yellow-500 mb-2 font-rpg tracking-widest">SPELLING</h1>
+                                        <h1 className="text-6xl font-black text-white mb-8 font-rpg tracking-tighter">RPG</h1>
+                                    </div>
                                     <p className="text-slate-300 mb-12 italic">「專屬於學習的異世界轉生」</p>
                                     <button onClick={() => { setGameState('HOME'); }} className="rpg-button px-12 py-4 rounded-full font-bold text-xl">開始冒險</button>
                                 </motion.div>
@@ -1333,7 +1549,6 @@
                         {gameState === 'HOME' && (
                             <div className="h-full bg-slate-900 text-slate-100 p-6 overflow-y-auto pt-16">
                                 <h2 className="text-2xl font-bold text-yellow-500 font-rpg mb-6">冒險者整備</h2>
-                                
                                 <div className="flex gap-2 mb-6">
                                     <button onClick={() => setGameState('MAP')} className="flex-1 py-4 rpg-button rounded-xl font-bold text-lg flex items-center justify-center gap-2"><Icons.MapIcon /> 前往地圖</button>
                                     <button onClick={() => {
@@ -1346,7 +1561,6 @@
                                         {player.hasNewStory && <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full new-badge">NEW</span>}
                                     </button>
                                 </div>
-
                                 <div className="mb-6 p-4 rpg-panel rounded-lg border border-slate-700 min-h-[160px]">
                                     {selectedItemInfo ? (
                                         <div>
@@ -1435,8 +1649,9 @@
                         {gameState === 'BATTLE' && (
                             <div className="h-full flex flex-col bg-black relative">
                                 <AnimatePresence>{battle.messagePopup && (<motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 1.5, opacity: 0 }} className="absolute inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"><h2 className="text-4xl font-black text-red-500 drop-shadow-lg text-center px-4 font-rpg">{battle.messagePopup}</h2></motion.div>)}</AnimatePresence>
+                                <AnimatePresence>{battle.specialComboText && (<motion.div initial={{ y: 50, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -50, opacity: 0 }} className="absolute top-1/4 left-0 right-0 z-50 flex items-center justify-center pointer-events-none"><h2 className="text-3xl rainbow-text text-center px-4">{battle.specialComboText}</h2></motion.div>)}</AnimatePresence>
                                 
-                                <div className="flex-1 relative overflow-hidden min-h-[30%]">
+                                <div className="flex-1 relative overflow-hidden">
                                     <motion.div className="absolute -inset-1 bg-cover bg-center opacity-40 scale-105" style={{backgroundImage: `url(${LEVELS.find(l=>l.id===levelInfo.id).bg})`, backgroundColor: '#334155'}} />
                                     
                                     <div className="absolute top-2 left-2 z-30 flex flex-col gap-0.5 pointer-events-none origin-top-left scale-90">
@@ -1459,17 +1674,11 @@
                                         )}
                                     </div>
 
-                                    {levelInfo.difficulty === 'hard' && (
-                                        <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-900/80 px-3 py-1 rounded border border-red-500 z-20">
-                                            <span className="text-xs text-red-200 font-bold">⚠ 場地效果：{LEVELS.find(l=>l.id===levelInfo.id).fieldEffect}</span>
-                                        </div>
-                                    )}
-
                                     <div className="absolute top-12 right-6 flex flex-col items-end w-40 z-10">
-                                        <div className="text-white font-bold text-sm drop-shadow-md mb-1">{battle.currentEnemy.name}</div>
+                                        <div className="text-white font-bold text-sm drop-shadow-md mb-1">{battle.currentEnemy?.name}</div>
                                         <div className="bg-slate-900/80 px-3 py-1 rounded border border-slate-700 text-xs text-red-400 font-bold mb-2">CD {battle.enemyCd}</div>
                                         <div className="w-full h-2 bg-slate-800 rounded-full border border-slate-700 mb-4"><motion.div className="h-full bg-red-600" animate={{ width: `${(battle.enemyHp/battle.enemyMaxHp)*100}%` }} /></div>
-                                        <motion.div className="w-40 h-40 relative" animate={battle.phase==='ENEMY_TURN'?{x:[-5,5,-5,5,0]}:{y:[0,-5,0]}} transition={{duration:2, repeat:Infinity}}><img src={battle.currentEnemy.img} className="w-full h-full object-contain scale-125 origin-bottom" alt="Enemy" /><AnimatePresence>{battle.damagePopup && (<motion.div initial={{ y: 0, opacity: 1, scale: 0.5 }} animate={{ y: -80, opacity: 0, scale: 1.5 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-5xl font-black text-red-500 drop-shadow-lg z-30">-{battle.damagePopup}</motion.div>)}</AnimatePresence></motion.div>
+                                        <motion.div className="w-40 h-40 relative" animate={battle.phase==='ENEMY_TURN'?{x:[-5,5,-5,5,0]}:{y:[0,-5,0]}} transition={{duration:2, repeat:Infinity}}><img src={battle.currentEnemy?.img} className="w-full h-full object-contain scale-125 origin-bottom" alt="Enemy" /><AnimatePresence>{battle.damagePopup && (<motion.div initial={{ y: 0, opacity: 1, scale: 0.5 }} animate={{ y: -80, opacity: 0, scale: 1.5 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-5xl font-black text-red-500 drop-shadow-lg z-30">-{battle.damagePopup}</motion.div>)}</AnimatePresence></motion.div>
                                     </div>
                                     <div className="absolute bottom-12 left-6 w-32 z-10">
                                         <div className="w-24 h-24 relative mb-4"><img src={ASSETS.char_missionary} className="w-full h-full object-contain scale-125 origin-bottom" alt="Player" /><AnimatePresence>{battle.playerDamagePopup && (<motion.div initial={{ y: 0, opacity: 1, scale: 0.8 }} animate={{ y: -60, opacity: 0, scale: 1.2 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-4xl font-black text-purple-500 drop-shadow-lg z-30">-{battle.playerDamagePopup}</motion.div>)}</AnimatePresence><AnimatePresence>{battle.healPopup && (<motion.div initial={{ y: 0, opacity: 1 }} animate={{ y: -60, opacity: 0 }} exit={{ opacity: 0 }} className="absolute inset-0 flex items-center justify-center text-4xl font-black text-emerald-400 drop-shadow-lg z-30">+{battle.healPopup}</motion.div>)}</AnimatePresence></div>
@@ -1478,11 +1687,17 @@
                                     </div>
                                 </div>
 
-                                <div className="h-12 bg-slate-900 border-y border-slate-800 flex items-center justify-center gap-2 px-4 overflow-hidden"><span className="text-yellow-500 font-bold text-lg">[{inputState.queue[inputState.currentIndex]?.zh}]</span><span className="text-slate-600 text-xs"> &lt; </span><span className="text-slate-500 text-xs">[{inputState.queue[(inputState.currentIndex+1)%inputState.queue.length]?.zh}]</span></div>
-                                <div className="h-2 bg-slate-950"><motion.div className={`h-full ${timer.val < 10 ? 'bg-red-600' : 'bg-emerald-500'}`} animate={{ width: `${(timer.val/timer.max)*100}%` }} transition={{ease:"linear", duration: 1}} /></div>
+                                <div className="h-12 bg-slate-900 border-y border-slate-800 flex items-center justify-center gap-2 px-4 overflow-hidden flex-shrink-0">
+                                    <span className="text-yellow-500 font-bold text-lg">[{inputState.queue[inputState.currentIndex]?.zh}]</span>
+                                    <span className="text-slate-600 text-xs"> &lt; </span>
+                                    <span className="text-slate-500 text-xs">[{inputState.queue[(inputState.currentIndex+1)%inputState.queue.length]?.zh}]</span>
+                                </div>
+                                <div className="h-2 bg-slate-950 flex-shrink-0">
+                                    <motion.div className={`h-full ${timer.val < 10 ? 'bg-red-600' : 'bg-emerald-500'}`} animate={{ width: `${(timer.val/timer.max)*100}%` }} transition={{ease:"linear", duration: 1}} />
+                                </div>
                                 
-                                <div className="h-80 bg-slate-900 flex flex-col flex-shrink-0">
-                                    <div className="flex justify-center gap-6 p-4">
+                                <div className="bg-slate-900 flex flex-col flex-shrink-0">
+                                    <div className="flex justify-center gap-6 p-3 flex-shrink-0">
                                         <button disabled={inputState.started} onClick={()=>setBattle({...battle, selectedMode: 'A'})} className={`tactic-btn ${battle.selectedMode === 'A' ? 'active' : ''}`}><img src={ASSETS.btn_tactic_a} alt="Mode A" /></button>
                                         <button disabled={inputState.started} onClick={()=>setBattle({...battle, selectedMode: 'B'})} className={`tactic-btn ${battle.selectedMode === 'B' ? 'active' : ''}`}><img src={ASSETS.btn_tactic_b} alt="Mode B" /></button>
                                         <button disabled={inputState.started || battle.isSilenced || !player.equippedItem || ITEMS.find(i=>i.id===player.equippedItem).type === 'passive'} onClick={handleSkill} 
@@ -1490,9 +1705,11 @@
                                             {player.equippedItem ? <img src={ITEMS.find(i=>i.id===player.equippedItem).btnImg} /> : <Icons.Lock className="m-auto text-slate-500"/>}
                                         </button>
                                     </div>
-                                    <div className="flex-1 flex items-center justify-center px-4">
+                                    
+                                    <div className="word-display-area">
                                         {(battle.selectedMode || battle.phase === 'INPUT') && renderInputHint()}
                                     </div>
+
                                     <div className="kbd-container">
                                         <div className="kbd-row">{'qwertyuiop'.split('').map(c => <button key={c} onMouseDown={(e)=>{e.preventDefault(); handleKeyPress(c)}} className="kbd-key">{c}</button>)}</div>
                                         <div className="kbd-row"><div className="row-2-spacer"></div>{'asdfghjkl'.split('').map(c => <button key={c} onMouseDown={(e)=>{e.preventDefault(); handleKeyPress(c)}} className="kbd-key">{c}</button>)}<div className="row-2-spacer"></div></div>
@@ -1517,6 +1734,5 @@
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<SpellingRPG />);
     </script>
-
-
-</body></html>
+</body>
+</html>
