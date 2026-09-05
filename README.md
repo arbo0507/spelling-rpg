@@ -5,9 +5,6 @@
 ## 🎮 立即遊玩 (Play Now)
 👉 **[點擊這裡開始遊戲](https://arbo0507.github.io/spelling-rpg/)**
 
-![Game Screenshot](https://via.placeholder.com/800x400?text=Game+Screenshot+Here)
-*(建議之後可以在這裡放一張遊戲實際運行的截圖)*
-
 ## ✨ 遊戲特色 (Features)
 
 *   **⚔️ 戰鬥學習**：將枯燥的背單字過程轉化為緊張刺激的回合制戰鬥。
